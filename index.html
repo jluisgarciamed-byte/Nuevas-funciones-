@@ -2606,10 +2606,20 @@
                 };
                 
                 const configCapa = configCapas[nombreCapa];
-                const colorBase = configCapa ? configCapa.color_hex : '#3498db';
+                // USAR SIEMPRE EL COLOR DE LA CONFIGURACIÓN (color_hex)
+                const colorCapa = configCapa ? configCapa.color_hex : '#3498db';
                 
                 const style = function(feature) {
-                    const color = feature.properties.color_hex || colorBase;
+                    // Para capas especiales como "Usos de Suelo" y "Límites Históricos", 
+                    // permitir que tengan su propia configuración de color
+                    let color = colorCapa;
+                    
+                    // Si es una capa especial y tiene color en los datos, usarlo
+                    if ((nombreCapa === 'Usos de Suelo ' || nombreCapa === 'Límites Históricos') && 
+                        feature.properties.color_hex) {
+                        color = feature.properties.color_hex;
+                    }
+                    
                     return {
                         color: color,
                         weight: 2,
@@ -2620,7 +2630,14 @@
                 };
                 
                 const pointToLayer = function(feature, latlng) {
-                    const color = feature.properties.color_hex || colorBase;
+                    let color = colorCapa;
+                    
+                    // Para capas especiales, permitir color específico en los datos
+                    if ((nombreCapa === 'Usos de Suelo ' || nombreCapa === 'Límites Históricos') && 
+                        feature.properties.color_hex) {
+                        color = feature.properties.color_hex;
+                    }
+                    
                     return L.circleMarker(latlng, {
                         radius: 6,
                         fillColor: color,
@@ -2701,32 +2718,8 @@
                 const configCapa = configCapas[capa];
                 const alias = configCapa ? configCapa.alias : formatearNombre(capa);
                 
-                // Obtener el color REAL de la capa cargada en el mapa
-                let colorReal = '#3498db'; // Color por defecto
-                
-                if (capasCargadas[capa]) {
-                    // Intentar obtener el color del primer elemento de la capa
-                    const layer = capasCargadas[capa];
-                    const layersArray = layer.getLayers();
-                    
-                    if (layersArray.length > 0) {
-                        const firstLayer = layersArray[0];
-                        
-                        // Para polígonos y líneas
-                        if (firstLayer.options && firstLayer.options.color) {
-                            colorReal = firstLayer.options.color;
-                        }
-                        // Para marcadores circulares
-                        else if (firstLayer.options && firstLayer.options.fillColor) {
-                            colorReal = firstLayer.options.fillColor;
-                        }
-                        // Para capas GeoJSON con estilo definido
-                        else if (layer.options && layer.options.style) {
-                            const estilo = layer.options.style(firstLayer.feature);
-                            colorReal = estilo.color || estilo.fillColor || colorReal;
-                        }
-                    }
-                }
+                // Obtener el color de la configuración de la capa
+                let colorLeyenda = configCapa ? configCapa.color_hex : '#3498db';
                 
                 // Para capas especiales como "Usos de Suelo"
                 if (capa === 'Usos de Suelo ') {
@@ -2736,13 +2729,8 @@
                         
                         geojson.features.forEach(feature => {
                             const clasificacion = feature.properties.desc_cve;
-                            // Usar el color de la capa en lugar del color de configuración
-                            let colorClasificacion = colorReal; // Usar el color real como base
-                            
-                            // Si hay color específico en la propiedad, usarlo
-                            if (feature.properties.color_hex) {
-                                colorClasificacion = feature.properties.color_hex;
-                            }
+                            // Usar el color específico de la feature si existe, de lo contrario usar el color de la configuración
+                            let colorClasificacion = feature.properties.color_hex || colorLeyenda;
                             
                             if (clasificacion && !clasificaciones[clasificacion]) {
                                 clasificaciones[clasificacion] = colorClasificacion;
@@ -2767,10 +2755,21 @@
                     }
                 }
                 
-                // Para el límite municipal y otras capas - usar el color REAL
+                // Para "Límites Históricos" - usar el color de la configuración (no mostrar múltiples colores)
+                if (capa === 'Límites Históricos') {
+                    contenidoLeyenda += `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color:${colorLeyenda}"></div>
+                            <div class="legend-text">${alias}</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Para todas las demás capas - usar el color de la configuración
                 contenidoLeyenda += `
                     <div class="legend-item">
-                        <div class="legend-color" style="background-color:${colorReal}"></div>
+                        <div class="legend-color" style="background-color:${colorLeyenda}"></div>
                         <div class="legend-text">${alias}</div>
                     </div>
                 `;

@@ -27,6 +27,7 @@
             --warning: #f59e0b;
             --error: #ef4444;
             --info: #3b82f6;
+            --idea: #8b5cf6;
         }
 
         /* ===== ESTILOS GENERALES ===== */
@@ -1849,6 +1850,93 @@
         let isTablet = false;
         let sidebarState = 'closed';
 
+        // ===== FUNCIÓN PARA CREAR MARCADOR PERSONALIZADO (MÁS PEQUEÑO) =====
+        function crearIconoMarcador(tipo, esCluster = false) {
+            // Definir colores y emojis según el tipo de aporte
+            let color, emoji;
+            
+            switch(tipo) {
+                case 'Problema':
+                    color = '#ef4444'; // Rojo
+                    emoji = '⚠️';
+                    break;
+                case 'Propuesta':
+                    color = '#10b981'; // Verde
+                    emoji = '💡';
+                    break;
+                case 'Oportunidad':
+                    color = '#f59e0b'; // Naranja
+                    emoji = '✨';
+                    break;
+                case 'Idea':
+                    color = '#8b5cf6'; // Violeta
+                    emoji = '💡';
+                    break;
+                default:
+                    color = '#0F3B38'; // Color principal del geoportal
+                    emoji = '📋';
+            }
+            
+            // Crear marcador personalizado con diseño alegre y tamaño reducido
+            const html = `
+                <div style="
+                    position: relative;
+                    width: 28px;
+                    height: 28px;
+                    background: ${color};
+                    border-radius: 50% 50% 50% 0;
+                    transform: rotate(-45deg);
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">
+                    <div style="
+                        transform: rotate(45deg);
+                        color: white;
+                        font-size: 14px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 100%;
+                        height: 100%;
+                    ">
+                        ${emoji}
+                    </div>
+                    <div style="
+                        position: absolute;
+                        width: 8px;
+                        height: 8px;
+                        background: white;
+                        border-radius: 50%;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        opacity: 0.6;
+                    "></div>
+                </div>
+                <div style="
+                    position: absolute;
+                    bottom: -4px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 6px;
+                    height: 6px;
+                    background: ${color};
+                    border-radius: 50%;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                "></div>
+            `;
+            
+            return L.divIcon({
+                html: html,
+                iconSize: [28, 28],
+                iconAnchor: [14, 28],
+                popupAnchor: [0, -28],
+                className: 'custom-marker-' + tipo.toLowerCase()
+            });
+        }
+
         // ===== INICIALIZACIÓN =====
         document.addEventListener('DOMContentLoaded', function() {
             inicializarResponsividad();
@@ -2596,6 +2684,7 @@
             }
         }
 
+        // ===== FUNCIÓN ACTUALIZADA DE LEYENDA =====
         function actualizarLeyenda() {
             const leyenda = document.getElementById('legend');
             const leyendaContent = document.getElementById('legend-content');
@@ -2610,7 +2699,36 @@
             
             capasActivas.forEach(capa => {
                 const configCapa = configCapas[capa];
+                const alias = configCapa ? configCapa.alias : formatearNombre(capa);
                 
+                // Obtener el color REAL de la capa cargada en el mapa
+                let colorReal = '#3498db'; // Color por defecto
+                
+                if (capasCargadas[capa]) {
+                    // Intentar obtener el color del primer elemento de la capa
+                    const layer = capasCargadas[capa];
+                    const layersArray = layer.getLayers();
+                    
+                    if (layersArray.length > 0) {
+                        const firstLayer = layersArray[0];
+                        
+                        // Para polígonos y líneas
+                        if (firstLayer.options && firstLayer.options.color) {
+                            colorReal = firstLayer.options.color;
+                        }
+                        // Para marcadores circulares
+                        else if (firstLayer.options && firstLayer.options.fillColor) {
+                            colorReal = firstLayer.options.fillColor;
+                        }
+                        // Para capas GeoJSON con estilo definido
+                        else if (layer.options && layer.options.style) {
+                            const estilo = layer.options.style(firstLayer.feature);
+                            colorReal = estilo.color || estilo.fillColor || colorReal;
+                        }
+                    }
+                }
+                
+                // Para capas especiales como "Usos de Suelo"
                 if (capa === 'Usos de Suelo ') {
                     const geojson = capasCargadas[capa]?.toGeoJSON();
                     if (geojson) {
@@ -2618,17 +2736,23 @@
                         
                         geojson.features.forEach(feature => {
                             const clasificacion = feature.properties.desc_cve;
-                            const color = feature.properties.color_hex || (configCapa ? configCapa.color_hex : '#3498db');
+                            // Usar el color de la capa en lugar del color de configuración
+                            let colorClasificacion = colorReal; // Usar el color real como base
+                            
+                            // Si hay color específico en la propiedad, usarlo
+                            if (feature.properties.color_hex) {
+                                colorClasificacion = feature.properties.color_hex;
+                            }
                             
                             if (clasificacion && !clasificaciones[clasificacion]) {
-                                clasificaciones[clasificacion] = color;
+                                clasificaciones[clasificacion] = colorClasificacion;
                             }
                         });
                         
                         const clasificacionesOrdenadas = Object.keys(clasificaciones).sort();
                         
                         if (clasificacionesOrdenadas.length > 0) {
-                            contenidoLeyenda += `<div class="legend-title">${formatearNombre(capa)}</div>`;
+                            contenidoLeyenda += `<div class="legend-title">${alias}</div>`;
                             clasificacionesOrdenadas.forEach(clasificacion => {
                                 const color = clasificaciones[clasificacion];
                                 contenidoLeyenda += `
@@ -2643,16 +2767,35 @@
                     }
                 }
                 
-                const color = configCapa ? configCapa.color_hex : '#3498db';
-                const alias = configCapa ? configCapa.alias : formatearNombre(capa);
-                
+                // Para el límite municipal y otras capas - usar el color REAL
                 contenidoLeyenda += `
                     <div class="legend-item">
-                        <div class="legend-color" style="background-color:${color}"></div>
+                        <div class="legend-color" style="background-color:${colorReal}"></div>
                         <div class="legend-text">${alias}</div>
                     </div>
                 `;
             });
+            
+            // Añadir leyenda para los marcadores de participación
+            contenidoLeyenda += `
+                <div class="legend-title" style="margin-top: 15px;">Participaciones</div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#ef4444"></div>
+                    <div class="legend-text">Problemas</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#10b981"></div>
+                    <div class="legend-text">Propuestas</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#f59e0b"></div>
+                    <div class="legend-text">Oportunidades</div>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color:#8b5cf6"></div>
+                    <div class="legend-text">Ideas</div>
+                </div>
+            `;
             
             leyendaContent.innerHTML = contenidoLeyenda;
             leyenda.style.display = 'block';
@@ -2925,7 +3068,7 @@
                     return {
                         type: 'Feature',
                         geometry: geometria,
-                        properties: propiedades
+                        propiedades: propiedades
                     };
                 }
                 return null;
@@ -2937,7 +3080,7 @@
             };
         }
 
-        // Renderizar capa de reportes
+        // Renderizar capa de reportes CON EL NUEVO MARCADOR MÁS PEQUEÑO
         function renderizarCapaReportes(datosFuente) {
             datasetFiltradoActual = datosFuente || [];
 
@@ -2949,26 +3092,16 @@
 
             reportesLayer = L.geoJSON(geoJSONData, {
                 pointToLayer: function(feature, latlng) {
-                    const tipo = feature.properties.tipo_aporte || 'Problema';
+                    const tipo = feature.propiedades.tipo_aporte || 'Problema';
                     
-                    let color = '#6b7280';
-                    if (tipo === 'Problema') color = '#ef4444';
-                    else if (tipo === 'Propuesta') color = '#10b981';
-                    else if (tipo === 'Oportunidad') color = '#f59e0b';
-                    else if (tipo === 'Idea') color = '#8b5cf6';
-                    
-                    return L.circleMarker(latlng, {
-                        radius: 8,
-                        fillColor: color,
-                        color: '#fff',
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.8
+                    // Usar el nuevo marcador personalizado y alegre
+                    return L.marker(latlng, {
+                        icon: crearIconoMarcador(tipo)
                     });
                 },
                 style: function(feature) {
-                    const tipo = feature.properties.tipo_aporte || 'Problema';
-                    let color = '#6b7280';
+                    const tipo = feature.propiedades.tipo_aporte || 'Problema';
+                    let color = '#0F3B38'; // Color principal en lugar de gris
                     if (tipo === 'Problema') color = '#ef4444';
                     else if (tipo === 'Propuesta') color = '#10b981';
                     else if (tipo === 'Oportunidad') color = '#f59e0b';
@@ -2983,7 +3116,7 @@
                     };
                 },
                 onEachFeature: function(feature, layer) {
-                    const reporte = feature.properties;
+                    const reporte = feature.propiedades;
                     const textoComentarios = limpiarTextoComentarios(reporte.comentarios || '');
                     const fecha = reporte.fecha_creacion ? new Date(reporte.fecha_creacion) : null;
 
@@ -3300,7 +3433,7 @@
             actualizarBotonesVisualizacion();
         }
 
-        // Clustering
+        // Clustering CON MARCACIONES ALEGRES
         function activarClustering() {
             if (isClusterActive) {
                 // Desactivar
@@ -3333,10 +3466,13 @@
                 }
             });
             
-            // Añadir marcadores al cluster
+            // Añadir marcadores al cluster CON EL NUEVO DISEÑO ALEGRE
             reportesCargados.forEach(reporte => {
                 if (reporte.lat && reporte.lng) {
-                    const marker = L.marker([reporte.lat, reporte.lng]);
+                    const tipo = reporte.tipo_aporte || 'Problema';
+                    const marker = L.marker([reporte.lat, reporte.lng], {
+                        icon: crearIconoMarcador(tipo)
+                    });
                     const textoComentarios = limpiarTextoComentarios(reporte.comentarios || '');
                     marker.bindPopup(`
                         <strong>${reporte.nombre || 'Anónimo'}</strong><br>

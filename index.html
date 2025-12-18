@@ -1850,6 +1850,62 @@
         let isTablet = false;
         let sidebarState = 'closed';
 
+        // ===== NUEVA VARIABLE: CONFIGURACIÓN DE VISUALIZACIÓN DE GEOMETRÍAS =====
+        let configVisGeom = { mostrar_puntos: true, mostrar_lineas: true, mostrar_poligonos: true };
+
+        // ===== FUNCIÓN HELPER PARA CONVERTIR GEOJSON A EWKT =====
+        function geojsonGeometryToEWKT(geometry) {
+            const srid = 4326;
+            let wkt = '';
+
+            switch(geometry.type) {
+                case 'Point':
+                    const [lngP, latP] = geometry.coordinates;
+                    wkt = `POINT(${lngP} ${latP})`;
+                    break;
+                case 'LineString':
+                    const coordsLS = geometry.coordinates.map(coord => `${coord[0]} ${coord[1]}`).join(', ');
+                    wkt = `LINESTRING(${coordsLS})`;
+                    break;
+                case 'Polygon':
+                    // En GeoJSON, el primer anillo es el exterior y debe estar cerrado (primero == último)
+                    // Vamos a asegurarnos de que esté cerrado.
+                    const rings = geometry.coordinates.map(ring => {
+                        // Si el primer punto no es igual al último, agregamos el primero al final.
+                        if (ring.length > 0 && (ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1])) {
+                            ring.push(ring[0]);
+                        }
+                        return ring.map(coord => `${coord[0]} ${coord[1]}`).join(', ');
+                    });
+                    wkt = `POLYGON((${rings.join('), (')}))`;
+                    break;
+                case 'MultiPolygon':
+                    // Similar a Polygon, pero con múltiples polígonos.
+                    const polygons = geometry.coordinates.map(polygon => {
+                        const rings = polygon.map(ring => {
+                            if (ring.length > 0 && (ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1])) {
+                                ring.push(ring[0]);
+                            }
+                            return ring.map(coord => `${coord[0]} ${coord[1]}`).join(', ');
+                        });
+                        return `((${rings.join('), (')}))`;
+                    });
+                    wkt = `MULTIPOLYGON(${polygons.join(', ')})`;
+                    break;
+                case 'MultiLineString':
+                    const lines = geometry.coordinates.map(line => {
+                        const coords = line.map(coord => `${coord[0]} ${coord[1]}`).join(', ');
+                        return `(${coords})`;
+                    });
+                    wkt = `MULTILINESTRING(${lines.join(', ')})`;
+                    break;
+                default:
+                    throw new Error(`Tipo de geometría no soportado: ${geometry.type}`);
+            }
+
+            return `SRID=${srid};${wkt}`;
+        }
+
         // ===== FUNCIÓN PARA CREAR MARCADOR PERSONALIZADO (MÁS PEQUEÑO) =====
         function crearIconoMarcador(tipo, esCluster = false) {
             // Definir colores y emojis según el tipo de aporte
@@ -2064,11 +2120,12 @@
                 }
             });
             
-            // Eventos de dibujo
+            // Eventos de dibujo - CAMBIO CLAVE AQUÍ
             map.on(L.Draw.Event.CREATED, function (e) {
                 const layer = e.layer;
                 drawnItems.addLayer(layer);
-                currentDrawnGeometry = layer.toGeoJSON();
+                // GUARDAR SOLO LA GEOMETRÍA, NO EL FEATURE COMPLETO
+                currentDrawnGeometry = layer.toGeoJSON().geometry;
                 
                 // Obtener coordenadas según tipo
                 if (e.layerType === 'marker') {
@@ -2382,6 +2439,105 @@
                 console.error('Error convirtiendo WKT:', error);
                 return null;
             }
+        }
+
+        // ===== NUEVAS FUNCIONES PARA CONTROL DE VISUALIZACIÓN DE GEOMETRÍAS =====
+
+        // 1. Variable global de configuración (ya definida arriba)
+        // let configVisGeom = { mostrar_puntos: true, mostrar_lineas: true, mostrar_poligonos: true };
+
+        // 2. Función para cargar configuración desde Supabase
+        async function cargarConfigVisGeom() {
+            try {
+                const respuesta = await fetch(
+                    `${SUPABASE_URL}/rest/v1/config_visualizacion_participaciones?select=mostrar_puntos,mostrar_lineas,mostrar_poligonos&id=eq.1&limit=1`,
+                    {
+                        headers: { 
+                            'apikey': SUPABASE_KEY, 
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    }
+                );
+                
+                if (!respuesta.ok) {
+                    throw new Error('Error al cargar configuración de visualización');
+                }
+                
+                const datos = await respuesta.json();
+                
+                if (datos && datos.length > 0) {
+                    configVisGeom = datos[0];
+                    console.log('✅ Configuración de visualización cargada:', configVisGeom);
+                } else {
+                    console.warn('⚠️ No se encontró configuración de visualización, usando valores por defecto');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error al cargar configuración de visualización:', error);
+                // Mantener valores por defecto
+            }
+        }
+
+        // 3. Helper para obtener tipo de geometría de un reporte
+        function obtenerTipoGeomReporte(reporte) {
+            // Si hay geom_geojson, parsear y usar geometry.type
+            if (reporte.geom_geojson) {
+                try {
+                    const geoJSON = typeof reporte.geom_geojson === 'string' 
+                        ? JSON.parse(reporte.geom_geojson) 
+                        : reporte.geom_geojson;
+                    
+                    if (geoJSON && geoJSON.type) {
+                        return mapearTipoGeometria(geoJSON.type);
+                    }
+                } catch (e) {
+                    console.warn('Error parseando geom_geojson:', e);
+                }
+            }
+            
+            // Si hay geom (PostGIS)
+            if (reporte.geom) {
+                // Intentar parsear como GeoJSON string
+                if (typeof reporte.geom === 'string') {
+                    try {
+                        const geoJSON = JSON.parse(reporte.geom);
+                        if (geoJSON && geoJSON.type) {
+                            return mapearTipoGeometria(geoJSON.type);
+                        }
+                    } catch (e) {
+                        // No es JSON, intentar detectar tipo por contenido
+                        if (reporte.geom.includes('POINT')) return 'punto';
+                        if (reporte.geom.includes('LINESTRING')) return 'linea';
+                        if (reporte.geom.includes('POLYGON')) return 'poligono';
+                    }
+                }
+                
+                // Si es objeto, verificar si tiene type
+                if (typeof reporte.geom === 'object' && reporte.geom.type) {
+                    return mapearTipoGeometria(reporte.geom.type);
+                }
+            }
+            
+            // Si cae a lat/lng, asumir punto
+            if (reporte.lat !== undefined && reporte.lng !== undefined) {
+                return 'punto';
+            }
+            
+            // Tipo no detectado
+            return null;
+        }
+
+        // Función auxiliar para mapear tipos de geometría
+        function mapearTipoGeometria(tipoGeoJSON) {
+            const tipo = tipoGeoJSON.toLowerCase();
+            
+            if (tipo.includes('point')) return 'punto';
+            if (tipo.includes('linestring')) return 'linea';
+            if (tipo.includes('polygon')) return 'poligono';
+            if (tipo.includes('multilinestring')) return 'linea';
+            if (tipo.includes('multipolygon')) return 'poligono';
+            
+            return null;
         }
 
         // ===== FUNCIONES DE BASEMAPS =====
@@ -2945,9 +3101,13 @@
                     lng: selectedLocation ? selectedLocation.lng : null
                 };
                 
-                // Si hay geometría dibujada, incluirla
+                // CAMBIO CLAVE: Convertir geometría a EWKT en lugar de enviar GeoJSON
                 if (currentDrawnGeometry) {
-                    reporteData.geom = currentDrawnGeometry;
+                    // Si hay geometría dibujada, convertirla a EWKT
+                    reporteData.geom = geojsonGeometryToEWKT(currentDrawnGeometry);
+                } else if (selectedLocation) {
+                    // Si no hay geometría dibujada pero hay ubicación seleccionada, crear punto EWKT
+                    reporteData.geom = `SRID=4326;POINT(${selectedLocation.lng} ${selectedLocation.lat})`;
                 }
                 
                 const respuesta = await fetch(`${SUPABASE_URL}/rest/v1/reportes_ciudadanos`, {
@@ -3015,7 +3175,7 @@
             }
         }
 
-        // ===== CARGAR REPORTES MEJORADA =====
+        // ===== CARGAR REPORTES MEJORADA CON CONTROL DE GEOMETRÍAS =====
         async function cargarReportes() {
             try {
                 const respuesta = await fetch(`${SUPABASE_URL}/rest/v1/reportes_ciudadanos?select=*`, {
@@ -3035,18 +3195,40 @@
                     return { ...reporte, ...etiquetas };
                 });
                 
-                renderizarCapaReportes(reportesCargados);
-                inicializarFiltrosParticipacion(reportesCargados);
-                actualizarResumenAportes(reportesCargados);
+                // CARGAR CONFIGURACIÓN DE VISUALIZACIÓN DESDE SUPABASE
+                await cargarConfigVisGeom();
                 
-                console.log(`✅ ${reportesCargados.length} participaciones cargadas`);
+                // Filtrar reportes según configuración de visualización
+                const reportesVisibles = reportesCargados.filter(reporte => {
+                    const tipoGeom = obtenerTipoGeomReporte(reporte);
+                    
+                    if (!tipoGeom) return true; // Si no se detecta tipo, mostrar por defecto
+                    
+                    switch(tipoGeom) {
+                        case 'punto':
+                            return configVisGeom.mostrar_puntos;
+                        case 'linea':
+                            return configVisGeom.mostrar_lineas;
+                        case 'poligono':
+                            return configVisGeom.mostrar_poligonos;
+                        default:
+                            return true;
+                    }
+                });
+                
+                renderizarCapaReportes(reportesVisibles);
+                inicializarFiltrosParticipacion(reportesCargados); // Usar todos para filtros
+                actualizarResumenAportes(reportesCargados); // Usar todos para resumen
+                
+                console.log(`✅ ${reportesCargados.length} participaciones cargadas, ${reportesVisibles.length} visibles según configuración`);
+                console.log('🔧 Configuración de visualización aplicada:', configVisGeom);
                 
             } catch (error) {
                 console.error('Error al cargar participaciones:', error);
             }
         }
 
-        // Construir features GeoJSON
+        // Construir features GeoJSON - CAMBIO CLAVE AQUÍ
         function construirFeaturesAportes(datosFuente) {
             const features = (datosFuente || []).map(reporte => {
                 let geometria = null;
@@ -3064,10 +3246,13 @@
 
                 if (geometria) {
                     const propiedades = { ...reporte };
+                    // Eliminar la geometría de las propiedades para evitar duplicados
+                    delete propiedades.geom;
+                    
                     return {
                         type: 'Feature',
                         geometry: geometria,
-                        propiedades: propiedades
+                        properties: propiedades // Cambiado de 'propiedades' a 'properties' para compatibilidad con QGIS
                     };
                 }
                 return null;
@@ -3079,7 +3264,7 @@
             };
         }
 
-        // Renderizar capa de reportes CON EL NUEVO MARCADOR MÁS PEQUEÑO
+        // Renderizar capa de reportes CON EL NUEVO MARCADOR MÁS PEQUEÑO - CAMBIO CLAVE AQUÍ
         function renderizarCapaReportes(datosFuente) {
             datasetFiltradoActual = datosFuente || [];
 
@@ -3091,7 +3276,7 @@
 
             reportesLayer = L.geoJSON(geoJSONData, {
                 pointToLayer: function(feature, latlng) {
-                    const tipo = feature.propiedades.tipo_aporte || 'Problema';
+                    const tipo = feature.properties.tipo_aporte || 'Problema'; // Cambiado de feature.propiedades
                     
                     // Usar el nuevo marcador personalizado y alegre
                     return L.marker(latlng, {
@@ -3099,7 +3284,7 @@
                     });
                 },
                 style: function(feature) {
-                    const tipo = feature.propiedades.tipo_aporte || 'Problema';
+                    const tipo = feature.properties.tipo_aporte || 'Problema'; // Cambiado de feature.propiedades
                     let color = '#0F3B38'; // Color principal en lugar de gris
                     if (tipo === 'Problema') color = '#ef4444';
                     else if (tipo === 'Propuesta') color = '#10b981';
@@ -3115,7 +3300,7 @@
                     };
                 },
                 onEachFeature: function(feature, layer) {
-                    const reporte = feature.propiedades;
+                    const reporte = feature.properties; // Cambiado de feature.propiedades
                     const textoComentarios = limpiarTextoComentarios(reporte.comentarios || '');
                     const fecha = reporte.fecha_creacion ? new Date(reporte.fecha_creacion) : null;
 
@@ -3212,7 +3397,25 @@
                 return true;
             });
 
-            renderizarCapaReportes(filtrados);
+            // APLICAR FILTRO ADICIONAL POR CONFIGURACIÓN DE GEOMETRÍAS
+            const filtradosConConfig = filtrados.filter(reporte => {
+                const tipoGeom = obtenerTipoGeomReporte(reporte);
+                
+                if (!tipoGeom) return true;
+                
+                switch(tipoGeom) {
+                    case 'punto':
+                        return configVisGeom.mostrar_puntos;
+                    case 'linea':
+                        return configVisGeom.mostrar_lineas;
+                    case 'poligono':
+                        return configVisGeom.mostrar_poligonos;
+                    default:
+                        return true;
+                }
+            });
+
+            renderizarCapaReportes(filtradosConConfig);
             actualizarResumenAportes(filtrados);
             actualizarEstadisticas(filtrados);
         }
@@ -3509,7 +3712,7 @@
 
         // ===== EXPORTACIÓN =====
         
-        // Exportar datos
+        // Exportar datos - CAMBIO CLAVE AQUÍ (para usar properties en lugar de propiedades)
         async function exportarDatos(formato) {
             const temaFiltro = document.getElementById('export-tema-filter').value;
             const tipoFiltro = document.getElementById('export-tipo-filter').value;
@@ -3586,14 +3789,75 @@
             mostrarNotificacion(`✅ Archivo ${nombreArchivo} descargado exitosamente`, 'success');
         }
 
-        // Exportar trazos de taller
+        // ===== FUNCIONES AUXILIARES PARA EXPORTACIÓN DE TRAZOS DE TALLER =====
+        
+        // Función helper para construir atributos del formulario
+        function construirAtributosTallerDesdeFormulario() {
+            return {
+                nombre: document.getElementById('nombre').value.trim(),
+                tema: document.getElementById('tema').value,
+                tipo_aporte: document.getElementById('tipo-aporte').value,
+                ambito: document.getElementById('ambito-aporte').value,
+                prioridad: document.getElementById('prioridad').value,
+                codigo_sesion: document.getElementById('codigo-sesion').value.trim(),
+                comentarios: document.getElementById('comentarios').value.trim(),
+                modo_taller: document.getElementById('modo-taller').checked,
+                fecha_exportacion: new Date().toISOString()
+            };
+        }
+
+        // Función para calcular centroide de una geometría
+        function calcularCentroideGeometria(feature) {
+            try {
+                const layer = L.geoJSON(feature);
+                const bounds = layer.getBounds();
+                if (bounds && bounds.isValid()) {
+                    const center = bounds.getCenter();
+                    return { lat: center.lat, lng: center.lng };
+                }
+            } catch (e) {
+                console.warn('No se pudo calcular el centroide para la feature', e);
+            }
+            return { lat: null, lng: null };
+        }
+
+        // Exportar trazos de taller CON ATRIBUTOS COMPLETOS
         function exportarTrazosTallerGeoJSON() {
             if (!drawnItems || drawnItems.getLayers().length === 0) {
                 alert('No hay trazos de taller dibujados en el mapa.');
                 return;
             }
-            const geoJSON = drawnItems.toGeoJSON();
-            const blob = new Blob([JSON.stringify(geoJSON, null, 2)], { type: 'application/json' });
+            
+            // Obtener atributos del formulario
+            const atributosFormulario = construirAtributosTallerDesdeFormulario();
+            
+            // Obtener el FeatureCollection original
+            const originalGeoJSON = drawnItems.toGeoJSON();
+            
+            // Crear un nuevo FeatureCollection con las propiedades extendidas
+            const featuresConAtributos = {
+                type: 'FeatureCollection',
+                features: originalGeoJSON.features.map(feature => {
+                    // Calcular centroide
+                    const centroide = calcularCentroideGeometria(feature);
+                    
+                    // Combinar propiedades: primero las existentes, luego las del formulario (prevalece formulario)
+                    const propiedades = {
+                        ...feature.properties,
+                        ...atributosFormulario,
+                        geometry_type: feature.geometry.type,
+                        lat_centroide: centroide.lat,
+                        lng_centroide: centroide.lng
+                    };
+                    
+                    return {
+                        ...feature,
+                        properties: propiedades
+                    };
+                })
+            };
+            
+            const blob = new Blob([JSON.stringify(featuresConAtributos, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -3603,7 +3867,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            mostrarNotificacion('✅ Trazos de taller exportados exitosamente', 'success');
+            mostrarNotificacion('✅ Trazos de taller exportados exitosamente con atributos completos', 'success');
         }
 
         // ===== INICIALIZAR EVENTOS =====

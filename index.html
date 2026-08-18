@@ -373,8 +373,121 @@
         .q-contador-wrap.alerta {
             background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4);
         }
+        /* ===== MODAL DE AVISO DE PRIVACIDAD ===== */
+        .modal-privacidad {
+            display: none; position: fixed; inset: 0; z-index: 4000;
+            background: rgba(0,0,0,0.7); padding: 1rem;
+            align-items: center; justify-content: center;
+        }
+        .modal-privacidad.visible { display: flex; }
+        .modal-privacidad-caja {
+            background: var(--primary-dark); border: 1px solid var(--border);
+            border-radius: 14px; width: min(720px, 100%); max-height: 88vh;
+            display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+        .modal-privacidad-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 1.2rem; border-bottom: 1px solid var(--border);
+        }
+        .modal-privacidad-head h3 {
+            margin: 0; font-size: 1.05rem; color: var(--light);
+        }
+        .modal-privacidad-cerrar {
+            background: transparent; border: none; color: var(--gray);
+            font-size: 1.1rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 6px;
+        }
+        .modal-privacidad-cerrar:hover { background: var(--primary-light); color: var(--light); }
+        .modal-privacidad-cuerpo {
+            padding: 1.1rem 1.2rem; overflow-y: auto;
+            font-size: 0.86rem; color: var(--light); line-height: 1.6;
+        }
+        .modal-privacidad-cuerpo h4 {
+            margin: 1.1rem 0 0.35rem; font-size: 0.9rem; color: var(--accent);
+        }
+        .modal-privacidad-cuerpo p { margin: 0 0 0.6rem; }
+        .modal-privacidad-cuerpo a { color: var(--info); }
+        .modal-privacidad-folio {
+            margin: 1rem 0; padding: 0.8rem 0.9rem; border-radius: 10px;
+            background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.35);
+        }
+        .modal-privacidad-folio strong { color: var(--success); font-size: 0.95rem; }
+        .modal-privacidad-folio p { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--gray); }
+        .modal-privacidad-fecha { font-size: 0.78rem; color: var(--gray); font-style: italic; }
+        .modal-privacidad-pie {
+            padding: 0.9rem 1.2rem; border-top: 1px solid var(--border); text-align: right;
+        }
+        .q-aviso a { color: var(--info); text-decoration: underline; }
+
+        .q-acc-pendiente {
+            display: none; flex-shrink: 0; padding: 0.1rem 0.45rem;
+            border-radius: 999px; background: rgba(239,68,68,0.2);
+            border: 1px solid rgba(239,68,68,0.5); color: #fca5a5;
+            font-size: 0.68rem; font-weight: 700; white-space: nowrap;
+        }
+        .q-acc-pendiente.visible { display: inline-block; }
+        .q-acc.sin-ubicar .q-acc-badge { display: none; }
+
+        /* ===== BLOQUEO SECUENCIAL DE TEMAS ===== */
+        .q-acc-candado {
+            display: none; flex-shrink: 0; font-size: 0.75rem; color: var(--gray);
+        }
+        .q-acc.bloqueado .q-acc-candado { display: inline-block; }
+        .q-acc.bloqueado .q-acc-chevron { display: none; }
+        .q-acc.bloqueado { opacity: 0.5; }
+        .q-acc.bloqueado .q-acc-head { cursor: not-allowed; }
+        .q-acc.bloqueado .q-acc-head:hover { background: transparent; }
+        .q-acc.resuelto .q-acc-head::before {
+            content: '\\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            color: var(--success); font-size: 0.72rem; flex-shrink: 0;
+        }
+        .q-acc.resaltado {
+            animation: q-parpadeo 0.7s ease-in-out 3;
+        }
+
+        /* Casilla "no aplica ninguno" */
+        .q-noaplica {
+            margin-top: 0.7rem; padding: 0.55rem 0.6rem; border-radius: 8px;
+            border: 1px dashed var(--border); background: rgba(0,0,0,0.2);
+        }
+        .q-noaplica:hover { border-color: var(--gray); }
+        .q-noaplica input:checked ~ span { color: var(--success); }
+
+        /* ===== BOTÓN CANCELAR TRAZO ===== */
+        .btn-cancelar-trazo {
+            display: none; position: absolute; z-index: 1000;
+            top: 1rem; left: 50%; transform: translateX(-50%);
+            align-items: center; gap: 0.45rem;
+            padding: 0.55rem 1rem; border-radius: 999px; cursor: pointer;
+            background: var(--danger); color: #fff; border: 2px solid #fff;
+            font-family: inherit; font-size: 0.85rem; font-weight: 600;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        }
+        .btn-cancelar-trazo.visible { display: inline-flex; }
+        .btn-cancelar-trazo:hover { filter: brightness(1.1); }
+
         /* ===== AUTOCOMPLETADO DE COLONIA ===== */
         .q-auto-wrap { position: relative; }
+        .q-auto-campo { position: relative; }
+        .q-auto-campo input { padding-right: 2.4rem; }
+        .q-auto-wrap.confirmada .q-auto-campo input {
+            border-color: var(--success); background: rgba(16,185,129,0.08);
+            font-weight: 600; cursor: default;
+        }
+        .q-auto-limpiar {
+            display: none; position: absolute; right: 0.5rem; top: 50%;
+            transform: translateY(-50%); background: transparent; border: none;
+            color: var(--gray); cursor: pointer; font-size: 0.9rem;
+            padding: 0.3rem 0.4rem; border-radius: 6px;
+        }
+        .q-auto-limpiar.visible { display: block; }
+        .q-auto-limpiar:hover { background: var(--primary-light); color: var(--light); }
+        .q-auto-noesta {
+            display: block; margin-top: 0.45rem; padding: 0;
+            background: none; border: none; cursor: pointer;
+            color: var(--info); font-family: inherit; font-size: 0.76rem;
+            text-decoration: underline; text-align: left;
+        }
+        .q-auto-noesta:hover { color: var(--light); }
         .q-auto-lista {
             display: none; position: absolute; z-index: 40; left: 0; right: 0;
             max-height: 230px; overflow-y: auto; margin-top: 0.25rem;
@@ -400,6 +513,7 @@
         }
         .q-auto-estado.ok    { color: var(--success); }
         .q-auto-estado.libre { color: var(--warning); }
+        .q-auto-estado.pendiente { color: var(--warning); font-weight: 600; }
 
         /* ===== GUÍA DIDÁCTICA DE GEOMETRÍAS ===== */
         .q-guia { display: flex; flex-direction: column; gap: 0.55rem; }
@@ -1740,53 +1854,21 @@
                                 <span id="q-contador" aria-live="polite">Aún no ha marcado ningún problema</span>
                             </div>
 
-                            <div class="q-alerta-ubi" id="q-alerta-ubi">
-                                <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-                                <span>Falta marcar el punto de referencia de su colonia o comunidad.
-                                Sirve para situarla en el mapa y para la opción "Toda mi colonia"
-                                de cada problema.</span>
+                            <!-- La caja de "Punto de referencia" se retiró de la vista: cada
+                                 problema se ubica por separado y ese control confundía. La
+                                 referencia de la colonia ahora se deriva del padrón al elegirla
+                                 en el campo 3.1. Estos nodos quedan ocultos porque varias
+                                 funciones del portal los consultan. -->
+                            <div style="display:none" aria-hidden="true">
+                                <div class="q-alerta-ubi" id="q-alerta-ubi"><span></span></div>
+                                <span id="coords-text">No seleccionada</span>
+                                <button type="button" id="pick-on-map"></button>
+                                <button type="button" id="use-gps"></button>
+                                <input type="number" id="lat-input">
+                                <input type="number" id="lng-input">
+                                <button type="button" id="set-manual-coords"></button>
                             </div>
 
-                            <div class="form-group">
-                                <label>Punto de referencia de su colonia o comunidad <span class="q-req">*</span></label>
-                                <p class="q-ayuda" style="margin-bottom:0.6rem;">Marque el centro
-                                aproximado: la plaza, la delegación, la entrada principal. Cada
-                                problema se ubica aparte, en el lugar exacto donde ocurre.</p>
-                                <div class="coords-container">
-                                    <div class="coords-display">
-                                        <i class="fas fa-map-marker-alt"></i>
-                                        <span id="coords-text">No seleccionada</span>
-                                    </div>
-                                    
-                                    <div class="coords-actions btn-row">
-                                        <button type="button" id="pick-on-map" class="btn btn-map btn-compact">
-                                            <i class="fas fa-map-pin"></i>
-                                            Marcar en Mapa
-                                        </button>
-                                        <button type="button" id="use-gps" class="btn btn-map btn-compact">
-                                            <i class="fas fa-location-crosshairs"></i>
-                                            Usar mi Ubicación
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="coords-manual">
-                                        <label>Coordenadas Manuales</label>
-                                        <div class="coords-inputs">
-                                            <input type="number" id="lat-input" placeholder="Latitud" step="any" class="coord-input" inputmode="decimal">
-                                        </div>
-                                        <div class="coords-inputs">
-                                            <input type="number" id="lng-input" placeholder="Longitud" step="any" class="coord-input" inputmode="decimal">
-                                        </div>
-                                        <div class="coords-inputs">
-                                            <button type="button" id="set-manual-coords" class="btn btn-set">
-                                                <i class="fas fa-check"></i>
-                                                Establecer
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
                             <button type="button" id="report-send" class="btn btn-send">
                                 <i class="fas fa-paper-plane"></i>
                                 Enviar Cuestionario
@@ -1829,12 +1911,14 @@
                 <div id="map-loading-text" style="margin-top: 0.75rem; color: var(--light); font-size: 0.9rem;">Cargando…</div>
             </div>
             
+            <button type="button" id="btn-cancelar-trazo" class="btn-cancelar-trazo"
+                    onclick="cancelarTrazoEnCurso()">
+                <i class="fas fa-xmark" aria-hidden="true"></i> Cancelar trazo
+            </button>
+
             <div class="map-controls">
                 <button class="control-btn" title="Zoom al alcance total" aria-label="Zoom al alcance total" onclick="zoomToAll()">
                     <i class="fas fa-expand" aria-hidden="true"></i>
-                </button>
-                <button class="control-btn" title="Limpiar mapa" aria-label="Limpiar mapa" onclick="limpiarMapa()">
-                    <i class="fas fa-broom" aria-hidden="true"></i>
                 </button>
             </div>
             
@@ -2678,10 +2762,11 @@
                 maxBounds: LIMITES_MAPA,
                 maxBoundsViscosity: 0.7,  // resistencia al arrastrar fuera de límites
                 minZoom: 9,
-                maxZoom: 19
+                maxZoom: 22
             }).setView([MUNICIPIO_CENTRO.lat, MUNICIPIO_CENTRO.lng], 13);
             
             baseLayerActual = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 22, maxNativeZoom: 19,
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
             
@@ -2840,8 +2925,33 @@
         }
 
         // ===== FUNCIONES DE BÚSQUEDA =====
+        let estadoPadron = 'cargando';   // cargando | listo | error
+
         async function cargarDatosBusqueda() {
+            estadoPadron = 'cargando';
+            actualizarEstadoColonia();
             await Promise.all([cargarLocalidades(), cargarColonias()]);
+            const total = (localidadesData || []).length + (coloniasData || []).length;
+            estadoPadron = total > 0 ? 'listo' : 'error';
+            if (estadoPadron === 'error') {
+                console.error('El padrón de colonias y localidades llegó vacío. ' +
+                    'Revise las políticas de lectura (RLS) de "Colonias_SFR" y "Localidades 1".');
+            }
+            actualizarEstadoColonia();
+        }
+
+        // Reintento manual desde el propio campo 3.1.
+        async function reintentarPadron() {
+            const est = document.getElementById('q-colonia-estado');
+            if (est) {
+                est.className = 'q-auto-estado';
+                est.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando listado…';
+            }
+            await cargarDatosBusqueda();
+            const input = document.getElementById('q-colonia');
+            if (input && input.value.trim().length >= 2) {
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         }
 
         async function cargarLocalidades() {
@@ -3454,22 +3564,27 @@
             switch(basemapId) {
                 case 'satellite':
                     newBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                        attribution: 'Tiles &copy; Esri'
+                        attribution: 'Tiles &copy; Esri',
+                        maxZoom: 22,        // hasta dónde deja acercar el mapa
+                        maxNativeZoom: 19   // hasta dónde existen teselas reales
                     });
                     break;
                 case 'terrain':
                     newBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
-                        attribution: 'Tiles &copy; Esri'
+                        attribution: 'Tiles &copy; Esri',
+                        maxZoom: 22, maxNativeZoom: 13
                     });
                     break;
                 case 'dark':
                     newBasemap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; OpenStreetMap &copy; CARTO'
+                        attribution: '&copy; OpenStreetMap &copy; CARTO',
+                        maxZoom: 22, maxNativeZoom: 20
                     });
                     break;
                 default:
                     newBasemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors'
+                        attribution: '&copy; OpenStreetMap contributors',
+                        maxZoom: 22, maxNativeZoom: 19
                     });
             }
 
@@ -3489,6 +3604,21 @@
         }
 
         // ===== FUNCIONES DE CAPAS =====
+        // Capas que no se muestran en el panel público. Se comparan por nombre
+        // normalizado —sin acentos, mayúsculas ni espacios de sobra— porque los
+        // nombres reales de tabla varían ("Zonificación Primaria_", "Usos de Suelo ")
+        // y comparar contra el string exacto se rompe al menor cambio.
+        const CAPAS_OCULTAS = ['zonificacion primaria', 'usos de suelo'];
+
+        function capaOcultaEnPublico(capa) {
+            const candidatos = [capa.nombre_tabla, capa.alias];
+            return candidatos.some(v => {
+                if (!v) return false;
+                const n = normalizarTexto(String(v)).replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+                return CAPAS_OCULTAS.some(oculta => n.startsWith(oculta));
+            });
+        }
+
         async function cargarCapasDisponibles() {
             const status = document.getElementById('status');
             const layersContainer = document.getElementById('layers');
@@ -3517,6 +3647,7 @@
                 
                 const capasPorDefecto = [];
                 configCapasArray.forEach(capa => {
+                    if (capaOcultaEnPublico(capa)) return;
                     const tipoGeometria = capa.tipo_geometria;
                     const color = sanitizarColor(capa.color_hex, '#3498db');
                     const icono = obtenerIconoPorTipo(tipoGeometria);
@@ -5147,7 +5278,9 @@
             'En la cabecera de San Francisco del Rincón', 'En Purísima del Rincón',
             'En León', 'En otro lugar', 'No aplica'];
         const OPC_ADSCRIPCION = ['Sí, indígena', 'Sí, afromexicana', 'No', 'Prefiero no decirlo'];
-        const OPC_REPRESENTACION = ['Representante o presidente de colonia',
+        const OPC_REPRESENTACION = [
+            'Ciudadano o ciudadana (sin cargo de representación)',
+            'Representante o presidente de colonia',
             'Delegado o delegada rural', 'Subdelegado o suplente',
             'Comisariado ejidal o representante de bienes comunales',
             'Comité de obra, de agua o de vecinos', 'Integrante del COPLADEM', 'Otro'];
@@ -5345,10 +5478,12 @@
             const codigoOtro = `${grupo.pre}.${grupo.opciones.length + 1}`;
             const idPanel = `panel-${grupo.pre}`;
             return `
-            <div class="q-grupo q-acc" data-bloque="${grupo.pre}">
+            <div class="q-grupo q-acc" data-bloque="${grupo.pre}" data-agenda="${agenda}">
                 <button type="button" class="q-acc-head" aria-expanded="false" aria-controls="${idPanel}">
                     <span>${escapeHTML(grupo.titulo)}</span>
                     <span class="q-acc-badge" data-badge="${grupo.pre}">0</span>
+                    <span class="q-acc-pendiente" aria-live="polite"></span>
+                    <i class="fas fa-lock q-acc-candado" aria-hidden="true" title="Termine el tema anterior"></i>
                     <i class="fas fa-chevron-down q-acc-chevron" aria-hidden="true"></i>
                 </button>
                 <div class="q-acc-body" id="${idPanel}">
@@ -5360,6 +5495,11 @@
                                maxlength="300" placeholder="Escriba aquí si aplica">
                         ${filaUbicacion(codigoOtro)}
                     </div>
+                    <label class="q-opcion q-noaplica">
+                        <input type="checkbox" class="q-check-noaplica" data-bloque="${grupo.pre}"
+                               data-agenda="${agenda}">
+                        <span>En mi colonia o comunidad <strong>no pasa ninguno</strong> de estos problemas</span>
+                    </label>
                 </div>
             </div>`;
         }
@@ -5402,10 +5542,13 @@
             const html = `
             <div class="q-aviso">
                 <i class="fas fa-shield-halved" aria-hidden="true"></i>
-                <p><strong>Aviso de privacidad.</strong> Los datos que proporcione se usan únicamente
-                para elaborar el Programa Municipal de Desarrollo Urbano y de Ordenamiento Ecológico
-                Territorial · Visión 2050. Puede dejar en blanco cualquier pregunta que no quiera
-                contestar, incluido su nombre. Sus respuestas se tratan de forma agregada.</p>
+                <p><strong>Aviso de privacidad.</strong> El Instituto Municipal de Planeación de
+                San Francisco del Rincón es el responsable del tratamiento de los datos que
+                proporcione, y se usan únicamente para elaborar el Programa Municipal de Desarrollo
+                Urbano y de Ordenamiento Ecológico Territorial · Visión 2050.
+                <strong>No se le pide su nombre.</strong> Sus respuestas se difunden de forma
+                estadística. Puede dejar en blanco cualquier pregunta.
+                <a href="#" onclick="mostrarAvisoPrivacidad(); return false;">Ver aviso completo</a></p>
             </div>
 
             <fieldset class="q-seccion">
@@ -5413,11 +5556,6 @@
                 <p class="q-ayuda">Estos datos sirven para conocer los distintos problemas de las mujeres,
                 los hombres, los jóvenes y los adultos mayores de las localidades urbanas y rurales.
                 Si alguna pregunta no la quiere contestar, puede dejarla en blanco.</p>
-
-                <div class="form-group">
-                    <label for="q-nombre">1.1 Nombre completo (opcional)</label>
-                    <input type="text" id="q-nombre" class="form-input" maxlength="150" placeholder="Puede dejarlo en blanco">
-                </div>
 
                 <fieldset class="q-grupo"><legend>1.2 Sexo</legend>
                     ${radioGrupo('q-sexo', OPC_SEXO, 'q-sexo')}
@@ -5477,14 +5615,25 @@
                 <legend class="q-seccion-titulo">Sección 3. ¿Qué lugar representa?</legend>
                 <div class="form-group q-auto-wrap">
                     <label for="q-colonia">3.1 Nombre exacto de su colonia o comunidad <span class="q-req">*</span></label>
-                    <p class="q-ayuda" style="margin-bottom:0.5rem;">Empiece a escribir y elija de la
-                    lista. Si no aparece, escríbalo completo y el equipo lo revisará.</p>
-                    <input type="text" id="q-colonia" class="form-input" maxlength="150"
-                           placeholder="Escriba y seleccione de la lista" autocomplete="off"
-                           role="combobox" aria-autocomplete="list" aria-expanded="false"
-                           aria-controls="q-colonia-lista" required>
+                    <p class="q-ayuda" style="margin-bottom:0.5rem;">Escriba las primeras letras y
+                    <strong>elija su colonia o comunidad de la lista</strong>. Solo se aceptan
+                    nombres de la lista, para que todas las respuestas puedan compararse entre sí.</p>
+                    <div class="q-auto-campo">
+                        <input type="text" id="q-colonia" class="form-input" maxlength="150"
+                               placeholder="Escriba y seleccione de la lista" autocomplete="off"
+                               role="combobox" aria-autocomplete="list" aria-expanded="false"
+                               aria-controls="q-colonia-lista" required>
+                        <button type="button" id="q-colonia-limpiar" class="q-auto-limpiar"
+                                onclick="limpiarColoniaSeleccionada()" aria-label="Cambiar colonia">
+                            <i class="fas fa-xmark" aria-hidden="true"></i>
+                        </button>
+                    </div>
                     <div id="q-colonia-lista" class="q-auto-lista" role="listbox"></div>
                     <div id="q-colonia-estado" class="q-auto-estado"></div>
+                    <button type="button" id="q-colonia-noesta" class="q-auto-noesta"
+                            onclick="reportarColoniaFaltante()">
+                        No encuentro mi colonia o comunidad en la lista
+                    </button>
                 </div>
             </fieldset>
 
@@ -5539,12 +5688,42 @@
                 const head = ev.target.closest('.q-acc-head');
                 if (!head) return;
                 const caja = head.closest('.q-acc');
+                if (caja.classList.contains('bloqueado')) {
+                    // Se señala el bloque anterior sin resolver y se dice exactamente
+                    // qué falta: revisarlo, o ubicar lo que ya marcó en él.
+                    const previos = Array.from(document.querySelectorAll(
+                        `.q-acc[data-agenda="${caja.getAttribute('data-agenda')}"]`));
+                    const culpable = previos.slice(0, previos.indexOf(caja))
+                        .find(c => !bloqueResuelto(c));
+                    const motivo = culpable ? motivoBloqueSinResolver(culpable) : 'sin_revisar';
+                    mostrarNotificacion(motivo === 'sin_ubicar'
+                        ? '⚠️ Antes de seguir, ubique en el mapa los problemas que ya marcó en el tema anterior'
+                        : '⚠️ Termine el tema anterior: marque los problemas que apliquen o la casilla de que ninguno aplica',
+                        'warning');
+                    if (culpable) {
+                        culpable.classList.add('abierto', 'resaltado');
+                        const h = culpable.querySelector('.q-acc-head');
+                        if (h) h.setAttribute('aria-expanded', 'true');
+                        setTimeout(() => culpable.classList.remove('resaltado'), 2400);
+                        culpable.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    return;
+                }
                 const abierto = caja.classList.toggle('abierto');
                 head.setAttribute('aria-expanded', abierto ? 'true' : 'false');
             });
 
             // Cualquier cambio recalcula avance, ubicaciones y priorización.
-            cont.addEventListener('change', alCambiarCuestionario);
+            cont.addEventListener('change', function (ev) {
+                const caja = ev.target.closest('.q-acc');
+                if (caja) {
+                    if (ev.target.classList.contains('q-check-noaplica'))
+                        aplicarExclusividadNoAplica(caja, 'noaplica');
+                    else if (ev.target.classList.contains('q-check'))
+                        aplicarExclusividadNoAplica(caja, 'problema');
+                }
+                alCambiarCuestionario();
+            });
             // El texto de "Otro" se escribe sin disparar change hasta perder foco;
             // input mantiene la lista de priorización sincronizada al teclear.
             cont.addEventListener('input', function (ev) {
@@ -5553,11 +5732,14 @@
             });
 
             inicializarAutocompletadoColonia();
+            folioSesion = generarFolio();
             alCambiarCuestionario();
         }
 
         function alCambiarCuestionario() {
+            aplicarExclusividadOtroNoAplica();
             actualizarTodasLasFilasUbicacion();
+            actualizarBloqueoBloques();
             actualizarContadorCuestionario();
             actualizarBadgesBloques();
             reconstruirPriorizacion('ambiental');
@@ -5595,7 +5777,7 @@
 
             // Barra de avance: los cinco pasos que el cuestionario necesita cerrar.
             const pasos = [
-                !!valorTexto('q-colonia'),
+                coloniaEsValida(),
                 !!(selectedLocation || currentDrawnGeometry),
                 total > 0,
                 total > 0 && faltan === 0,
@@ -5619,6 +5801,223 @@
                 badge.textContent = n;
                 badge.classList.toggle('visible', n > 0);
             });
+        }
+
+        // Folio anónimo de la sesión. Reemplaza al nombre: agrupa todas las
+        // aportaciones de una misma persona sin identificarla. Se le muestra al
+        // final para que pueda ejercer sus derechos ARCOP citándolo.
+        let folioSesion = null;
+
+        function generarFolio() {
+            const d = new Date();
+            const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+            const azar = Math.random().toString(36).slice(2, 7).toUpperCase();
+            return `SFR-${ymd}-${azar}`;
+        }
+
+        // Aviso de privacidad integral del IMPLAN. Se muestra en ventana modal para
+        // no sacar a la persona del cuestionario a medio llenar.
+        function mostrarAvisoPrivacidad() {
+            let modal = document.getElementById('modal-privacidad');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'modal-privacidad';
+                modal.className = 'modal-privacidad';
+                modal.innerHTML = `
+                <div class="modal-privacidad-caja" role="dialog" aria-modal="true"
+                     aria-labelledby="titulo-privacidad">
+                    <div class="modal-privacidad-head">
+                        <h3 id="titulo-privacidad">Aviso de privacidad integral</h3>
+                        <button type="button" class="modal-privacidad-cerrar"
+                                onclick="cerrarAvisoPrivacidad()" aria-label="Cerrar">
+                            <i class="fas fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div class="modal-privacidad-cuerpo">
+                        <p><strong>Cuestionario de participación ciudadana para la Agenda Ambiental
+                        y Territorial del PMDUOET 2050.</strong></p>
+
+                        <p>El <strong>Instituto Municipal de Planeación de San Francisco del Rincón,
+                        Gto.</strong>, con domicilio en Blvd. Camino Ojo de Agua n.º 1100 B, colonia
+                        Barrio de Guadalupe, C.P. 36365, es el <strong>Responsable</strong> del
+                        tratamiento y resguardo de los datos personales que proporcione. El
+                        <strong>Sujeto Obligado</strong> es el Municipio de San Francisco del Rincón,
+                        Guanajuato. Los datos se protegen conforme a la Ley General de Protección de
+                        Datos Personales en Posesión de Sujetos Obligados y a la Ley de Protección de
+                        Datos Personales en Posesión de Sujetos Obligados para el Estado de Guanajuato.</p>
+
+                        <h4>Datos personales que se tratan</h4>
+                        <p><strong>De identificación:</strong> colonia, edad, lugar de nacimiento.<br>
+                        <strong>Laborales:</strong> ocupación, lugar de trabajo o estudio.<br>
+                        <strong>Académicos:</strong> nivel de estudios.</p>
+
+                        <h4>Datos personales sensibles</h4>
+                        <p><strong>De origen:</strong> información relativa al origen étnico y racial.
+                        Su respuesta es voluntaria y puede dejarla en blanco.</p>
+
+                        <h4>Finalidad del tratamiento</h4>
+                        <p>Cuestionario de participación ciudadana para la Agenda Ambiental y
+                        Territorial del PMDUOET 2050.</p>
+
+                        <h4>Transferencia de datos</h4>
+                        <p>Los datos se transfieren al Consejo Directivo del IMPLAN, al Consejo
+                        Consultivo del IMPLAN, al Consejo de Planeación para el Desarrollo Municipal
+                        y al público en general, con la finalidad de generar estadísticas sobre el
+                        perfil de la población participante en el proceso de planeación.</p>
+
+                        <h4>Negativa al tratamiento y derechos ARCOP</h4>
+                        <p>Puede manifestar su negativa, o ejercer sus derechos de acceso,
+                        rectificación, cancelación, oposición y portabilidad, ante la Unidad de
+                        Transparencia del Municipio de San Francisco del Rincón, con domicilio en
+                        calle Tomás Padilla n.º 108, colonia Zona Centro, C.P. 36300; al teléfono
+                        <a href="tel:+524767061827">476 706 18 27</a> de lunes a viernes de 09:00 a
+                        16:30 horas; al correo
+                        <a href="mailto:unidaddetransparencia@sanfrancisco.gob.mx">unidaddetransparencia@sanfrancisco.gob.mx</a>;
+                        o mediante la
+                        <a href="http://www.plataformadetransparencia.org.mx/" target="_blank"
+                           rel="noopener">Plataforma Nacional de Transparencia</a>.</p>
+
+                        <div class="modal-privacidad-folio">
+                            <strong>Su folio de esta sesión: <span id="folio-modal"></span></strong>
+                            <p>Este cuestionario no le pide su nombre. Si más adelante desea consultar
+                            o cancelar lo que registró, cite este folio ante la Unidad de
+                            Transparencia. Anótelo antes de enviar.</p>
+                        </div>
+
+                        <h4>Fundamento legal</h4>
+                        <p>Artículos 6 y 16 de la Constitución Política de los Estados Unidos
+                        Mexicanos; 14 B fracciones II y III de la Constitución Política para el Estado
+                        de Guanajuato; diversos artículos de la Ley de Protección de Datos Personales
+                        en Posesión de Sujetos Obligados para el Estado de Guanajuato y de la Ley de
+                        Transparencia y Acceso a la Información Pública para el Estado de Guanajuato;
+                        artículo 109 de la Ley Orgánica Municipal y artículo 11 fracción V del
+                        Reglamento del IMPLAN de San Francisco del Rincón.</p>
+
+                        <h4>Cambios al aviso</h4>
+                        <p>Este aviso puede modificarse. Consulte la versión vigente en
+                        <a href="http://www.sanfrancisco.gob.mx" target="_blank" rel="noopener">www.sanfrancisco.gob.mx</a>.</p>
+
+                        <p class="modal-privacidad-fecha">Fecha de elaboración: 18 de agosto de 2026.</p>
+                    </div>
+                    <div class="modal-privacidad-pie">
+                        <button type="button" class="btn btn-primary" onclick="cerrarAvisoPrivacidad()">
+                            Entendido
+                        </button>
+                    </div>
+                </div>`;
+                document.body.appendChild(modal);
+                modal.addEventListener('click', function (ev) {
+                    if (ev.target === modal) cerrarAvisoPrivacidad();
+                });
+            }
+            const f = document.getElementById('folio-modal');
+            if (f) f.textContent = folioSesion || '—';
+            modal.classList.add('visible');
+        }
+
+        function cerrarAvisoPrivacidad() {
+            const modal = document.getElementById('modal-privacidad');
+            if (modal) modal.classList.remove('visible');
+        }
+
+        // ---------- Bloqueo secuencial de bloques ----------
+        // Un bloque queda resuelto cuando la persona declaró que ninguno aplica, o
+        // cuando marcó al menos un problema Y ubicó TODOS los que marcó. Sin la
+        // segunda condición se podía avanzar dejando problemas sin localizar y
+        // acumularlos hasta el final, que es justo lo que el mapeo temático evita:
+        // cada problema se ubica en el momento en que se reconoce, no después.
+        function bloqueResuelto(caja) {
+            if (caja.querySelector('.q-check-noaplica:checked')) return true;
+            const marcados = codigosMarcadosEnBloque(caja);
+            if (marcados.length === 0) return false;
+            return marcados.every(cod => !!ubicacionesProblemas[cod]);
+        }
+
+        // Códigos marcados dentro de un bloque, incluido el campo "Otro" con texto.
+        function codigosMarcadosEnBloque(caja) {
+            const lista = [];
+            caja.querySelectorAll('.q-check:checked').forEach(c => lista.push(c.value));
+            const otro = caja.querySelector('.q-otro-input');
+            if (otro && otro.value.trim()) lista.push(otro.getAttribute('data-codigo'));
+            return lista;
+        }
+
+        // Problemas del bloque que aún no tienen ubicación.
+        function faltantesDeUbicacionEnBloque(caja) {
+            return codigosMarcadosEnBloque(caja).filter(cod => !ubicacionesProblemas[cod]);
+        }
+
+        // Distingue por qué un bloque no está resuelto, para decírselo con precisión.
+        function motivoBloqueSinResolver(caja) {
+            if (caja.querySelector('.q-check-noaplica:checked')) return null;
+            const marcados = codigosMarcadosEnBloque(caja);
+            if (marcados.length === 0) return 'sin_revisar';
+            return faltantesDeUbicacionEnBloque(caja).length > 0 ? 'sin_ubicar' : null;
+        }
+
+        function actualizarBloqueoBloques() {
+            ['ambiental', 'territorial'].forEach(agenda => {
+                const cajas = Array.from(document.querySelectorAll(`.q-acc[data-agenda="${agenda}"]`));
+                let anterioresListos = true;
+                cajas.forEach((caja, i) => {
+                    const resuelto = bloqueResuelto(caja);
+                    const bloqueado = !anterioresListos;
+                    const sinUbicar = faltantesDeUbicacionEnBloque(caja).length;
+                    caja.classList.toggle('bloqueado', bloqueado);
+                    caja.classList.toggle('resuelto', resuelto);
+                    caja.classList.toggle('sin-ubicar', sinUbicar > 0);
+                    const avisoUbi = caja.querySelector('.q-acc-pendiente');
+                    if (avisoUbi) {
+                        avisoUbi.textContent = sinUbicar > 0
+                            ? `Falta ubicar ${sinUbicar}` : '';
+                        avisoUbi.classList.toggle('visible', sinUbicar > 0);
+                    }
+                    const head = caja.querySelector('.q-acc-head');
+                    if (head) head.setAttribute('aria-disabled', bloqueado ? 'true' : 'false');
+                    // Un bloque bloqueado no puede quedar abierto.
+                    if (bloqueado && caja.classList.contains('abierto')) {
+                        caja.classList.remove('abierto');
+                        if (head) head.setAttribute('aria-expanded', 'false');
+                    }
+                    // El primero siempre abierto de arranque para que se entienda la mecánica.
+                    if (i === 0 && !resuelto && !caja.dataset.autoAbierto) {
+                        caja.classList.add('abierto');
+                        if (head) head.setAttribute('aria-expanded', 'true');
+                        caja.dataset.autoAbierto = '1';
+                    }
+                    if (!resuelto) anterioresListos = false;
+                });
+            });
+        }
+
+        // "No aplica" y marcar problemas son mutuamente excluyentes.
+        function aplicarExclusividadNoAplica(caja, origen) {
+            const noAplica = caja.querySelector('.q-check-noaplica');
+            if (!noAplica) return;
+            if (origen === 'noaplica' && noAplica.checked) {
+                caja.querySelectorAll('.q-check:checked').forEach(c => { c.checked = false; });
+                const otro = caja.querySelector('.q-otro-input');
+                if (otro) otro.value = '';
+            } else if (origen === 'problema') {
+                const hayAlgo = caja.querySelector('.q-check:checked') ||
+                    (caja.querySelector('.q-otro-input') && caja.querySelector('.q-otro-input').value.trim());
+                if (hayAlgo) noAplica.checked = false;
+            }
+        }
+
+        // Escribir en "Otro" no dispara change hasta perder foco, así que la
+        // exclusividad con "no aplica" se revisa en cada ciclo.
+        function aplicarExclusividadOtroNoAplica() {
+            document.querySelectorAll('.q-acc').forEach(caja => {
+                const otro = caja.querySelector('.q-otro-input');
+                const na = caja.querySelector('.q-check-noaplica');
+                if (otro && na && otro.value.trim() && na.checked) na.checked = false;
+            });
+        }
+
+        function bloquesSinResolver(agenda) {
+            return Array.from(document.querySelectorAll(`.q-acc[data-agenda="${agenda}"]`))
+                .filter(c => !bloqueResuelto(c));
         }
 
         // ---------- Autocompletado de colonia o comunidad ----------
@@ -5655,6 +6054,7 @@
             const pintar = () => {
                 const termino = input.value.trim();
                 coloniaSeleccionadaOficial = null;
+                input.readOnly = false;
                 actualizarEstadoColonia();
 
                 if (termino.length < 2) { cerrar(); return; }
@@ -5674,7 +6074,7 @@
                     })
                     .slice(0, 8);
 
-                if (coincidencias.length === 0) { cerrar(); return; }
+                if (coincidencias.length === 0) { cerrar(); actualizarEstadoColonia(); return; }
 
                 lista.innerHTML = coincidencias.map((x, i) => `
                     <div class="q-auto-item" role="option" data-idx="${i}"
@@ -5699,10 +6099,23 @@
                 input.value = x.nombre;
                 coloniaSeleccionadaOficial = x.nombre;
                 actualizarEstadoColonia();
+                // Elegir el lugar del padrón fija la referencia de la colonia y centra
+                // el mapa ahí. Sustituye a la caja de "Punto de referencia" que se
+                // retiró: el ciudadano ya no marca nada, la referencia viene del dato
+                // oficial y solo tiene que ubicar cada problema.
+                try {
+                    seleccionarResultadoBusqueda(x.item);
+                    const g = postgisToGeoJSON(x.item.geom);
+                    if (g) {
+                        const c = centroideDeGeometria(g);
+                        if (c) {
+                            selectedLocation = { lat: c.lat, lng: c.lng };
+                            const ct = document.getElementById('coords-text');
+                            if (ct) ct.textContent = `${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`;
+                        }
+                    }
+                } catch (e) { console.warn('Sin geometría para', x.nombre, e); }
                 actualizarContadorCuestionario();
-                // Elegir el lugar centra el mapa ahí: la persona ya no tiene que
-                // buscarlo a mano para poner el punto de referencia.
-                try { seleccionarResultadoBusqueda(x.item); } catch (e) { /* sin geometría */ }
             };
 
             input.addEventListener('input', pintar);
@@ -5731,20 +6144,77 @@
         // Distingue un nombre tomado del padrón de uno escrito a mano. No bloquea el
         // envío —una colonia nueva o un nombre local legítimo puede no estar en el
         // padrón— pero deja constancia para revisarlo al sistematizar.
+        function coloniaEsValida() {
+            const input = document.getElementById('q-colonia');
+            if (!input) return false;
+            return !!coloniaSeleccionadaOficial &&
+                normalizarTexto(coloniaSeleccionadaOficial) === normalizarTexto(input.value.trim());
+        }
+
         function actualizarEstadoColonia() {
             const est = document.getElementById('q-colonia-estado');
             const input = document.getElementById('q-colonia');
+            const wrap = input ? input.closest('.q-auto-wrap') : null;
+            const btnLimpiar = document.getElementById('q-colonia-limpiar');
+            const btnNoEsta = document.getElementById('q-colonia-noesta');
             if (!est || !input) return;
+
             const v = input.value.trim();
-            if (!v) { est.className = 'q-auto-estado'; est.textContent = ''; return; }
-            if (coloniaSeleccionadaOficial &&
-                normalizarTexto(coloniaSeleccionadaOficial) === normalizarTexto(v)) {
+            const valida = coloniaEsValida();
+
+            if (wrap) wrap.classList.toggle('confirmada', valida);
+            if (btnLimpiar) btnLimpiar.classList.toggle('visible', valida);
+            input.readOnly = valida;   // ya elegida: no se puede alterar el texto
+            if (btnNoEsta) btnNoEsta.style.display = valida ? 'none' : 'block';
+
+            if (valida) {
                 est.className = 'q-auto-estado ok';
-                est.innerHTML = '<i class="fas fa-circle-check"></i> Tomado del padrón oficial';
-            } else {
+                est.innerHTML = '<i class="fas fa-circle-check"></i> Colonia o comunidad confirmada';
+            } else if (typeof estadoPadron !== 'undefined' && estadoPadron === 'error') {
                 est.className = 'q-auto-estado libre';
-                est.innerHTML = '<i class="fas fa-pen"></i> Escrito a mano: el equipo lo revisará';
+                est.innerHTML = '<i class="fas fa-triangle-exclamation"></i> No se pudo cargar el ' +
+                    'listado de colonias. <a href="#" onclick="reintentarPadron(); return false;">Reintentar</a>';
+            } else if (typeof estadoPadron !== 'undefined' && estadoPadron === 'cargando') {
+                est.className = 'q-auto-estado';
+                est.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando listado…';
+            } else if (!v) {
+                est.className = 'q-auto-estado';
+                est.textContent = '';
+            } else if (catalogoLugares().length > 0 &&
+                       document.querySelectorAll('#q-colonia-lista .q-auto-item').length === 0 &&
+                       v.length >= 2) {
+                est.className = 'q-auto-estado pendiente';
+                est.innerHTML = '<i class="fas fa-magnifying-glass"></i> Sin coincidencias. ' +
+                    'Pruebe con menos palabras';
+            } else {
+                est.className = 'q-auto-estado pendiente';
+                est.innerHTML = '<i class="fas fa-arrow-up"></i> Elija una opción de la lista de arriba';
             }
+        }
+
+        // Permite corregir la elección sin recargar: devuelve el campo a modo escritura.
+        function limpiarColoniaSeleccionada() {
+            const input = document.getElementById('q-colonia');
+            if (!input) return;
+            coloniaSeleccionadaOficial = null;
+            input.readOnly = false;
+            input.value = '';
+            input.focus();
+            actualizarEstadoColonia();
+            actualizarContadorCuestionario();
+        }
+
+        // Salida para colonias que no estén en el padrón. No permite escribir el
+        // nombre libre —eso reintroduce el problema de grafías— sino que orienta a
+        // elegir la localidad más cercana y avisar al IMPLAN, que es quien puede
+        // dar de alta el lugar en la capa oficial.
+        function reportarColoniaFaltante() {
+            alert('Si su colonia o comunidad no aparece en la lista:\n\n' +
+                  '1. Pruebe escribiendo solo una parte del nombre, sin "colonia" ni "fraccionamiento".\n' +
+                  '2. Si aun así no aparece, elija la localidad o colonia más cercana y ubique sus ' +
+                  'problemas en el lugar exacto donde ocurren: la ubicación en el mapa es lo que ' +
+                  'realmente localiza el problema.\n\n' +
+                  'Avise al IMPLAN al 476 706 18 27 para que su colonia se agregue al padrón.');
         }
 
         // ---------- Ubicación por problemática ----------
@@ -5776,6 +6246,7 @@
             const fila = document.querySelector(`.q-ubi[data-ubi="${codigo}"]`);
             if (fila) fila.classList.add('esperando');
 
+            actualizarBotonCancelar();
             if (tipo === 'punto') {
                 isPickingLocation = false; // el clic lo atiende el manejador de problemas
                 mostrarToast('Toque en el mapa el lugar exacto donde ocurre este problema', 'info');
@@ -5792,6 +6263,8 @@
             problemaEnUbicacion = null;
             document.querySelectorAll('.q-ubi').forEach(f => f.classList.remove('esperando'));
             if (drawControl) { map.removeControl(drawControl); drawControl = null; }
+            const btn = document.getElementById('btn-cancelar-trazo');
+            if (btn) btn.classList.remove('visible');
         }
 
         // Guarda la geometría y dibuja el marcador correspondiente.
@@ -5855,9 +6328,42 @@
 
         function borrarUbicacionProblema(codigo) {
             delete ubicacionesProblemas[codigo];
+            limpiarTrazosResiduales();
             redibujarProblemasEnMapa();
             actualizarFilaUbicacion(codigo);
             actualizarContadorCuestionario();
+            mostrarToast('Trazo borrado. Vuelva a ubicar el problema', 'info');
+        }
+
+        // Quita los trazos que L.Draw deja en su capa de edición. Sin esto, borrar la
+        // ubicación de un problema dejaba el polígono dibujado sobre el mapa aunque
+        // el dato ya no existiera, y el ciudadano creía que seguía registrado.
+        function limpiarTrazosResiduales() {
+            if (typeof drawnItems !== 'undefined' && drawnItems) drawnItems.clearLayers();
+            if (drawControl) { map.removeControl(drawControl); drawControl = null; }
+            currentDrawnGeometry = null;
+        }
+
+        // Cancela un trazo a medias: la persona empezó a dibujar y se arrepintió.
+        function cancelarTrazoEnCurso() {
+            try {
+                if (L.Draw && L.Draw.Polygon) {
+                    // Desactiva cualquier manejador de dibujo abierto.
+                    ['Polygon','Polyline','Marker'].forEach(t => {
+                        if (map._toolbars) return;
+                    });
+                }
+            } catch (e) { /* sin manejador activo */ }
+            limpiarTrazosResiduales();
+            desactivarDibujoProblema();
+            actualizarBotonCancelar();
+            mostrarToast('Trazo cancelado', 'info');
+        }
+
+        // Botón flotante visible solo mientras hay un trazo en curso.
+        function actualizarBotonCancelar() {
+            const btn = document.getElementById('btn-cancelar-trazo');
+            if (btn) btn.classList.toggle('visible', !!problemaEnUbicacion);
         }
 
         // Refresca el estado visual de la fila de un problema.
@@ -6068,10 +6574,18 @@
             if (isSendingReport) return;
 
             const colonia = valorTexto('q-colonia');
-            if (!colonia) {
-                alert('Por favor escriba el nombre de su colonia o comunidad (pregunta 3.1).');
+            // Debe venir del padrón. Aceptar texto libre produce grafías distintas
+            // del mismo lugar y obliga a normalizar cientos de registros a mano al
+            // sistematizar; peor aún, impide cruzar los reportes por colonia.
+            if (!coloniaEsValida()) {
+                alert(colonia
+                    ? 'Elija su colonia o comunidad de la lista que aparece al escribir (pregunta 3.1). No se aceptan nombres escritos a mano.'
+                    : 'Falta indicar su colonia o comunidad (pregunta 3.1).');
                 const el = document.getElementById('q-colonia');
-                if (el) el.focus();
+                if (el) {
+                    el.focus();
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 return;
             }
 
@@ -6101,6 +6615,23 @@
                 return;
             }
             if (alertaUbi) alertaUbi.classList.remove('visible');
+
+            // Todos los bloques deben estar resueltos: con problemas marcados o con la
+            // casilla de que ninguno aplica. Un bloque en blanco es ambiguo.
+            const pendientes = [...bloquesSinResolver('ambiental'), ...bloquesSinResolver('territorial')];
+            if (pendientes.length > 0) {
+                const caja = pendientes[0];
+                mostrarNotificacion(motivoBloqueSinResolver(caja) === 'sin_ubicar'
+                    ? `⚠️ Hay problemas marcados sin ubicar en el mapa (${pendientes.length} tema(s) pendiente(s))`
+                    : `⚠️ Faltan ${pendientes.length} tema(s) por revisar`, 'warning');
+                caja.classList.add('abierto');
+                const h = caja.querySelector('.q-acc-head');
+                if (h) h.setAttribute('aria-expanded', 'true');
+                caja.classList.add('resaltado');
+                setTimeout(() => caja.classList.remove('resaltado'), 2400);
+                caja.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
 
             // Cada problema marcado debe tener su propia ubicación. Sin esto el mapeo
             // temático se degrada: todos los problemas de una persona caerían en el
@@ -6163,7 +6694,7 @@
 
                 const payload = {
                     distribuidor: distribuidorCodigo,
-                    nombre: valorTexto('q-nombre'),
+                    folio: folioSesion,
                     sexo: valorRadio('q-sexo'),
                     edad: valorEntero('q-edad'),
                     lugar_nacimiento: valorRadio('q-nacio'),
@@ -6176,12 +6707,14 @@
                     autoadscripcion: valorRadio('q-adscripcion'),
                     representacion: valorRadio('q-representacion'),
                     representacion_otro: valorTexto('q-representacion-otro'),
-                    colonia_comunidad: colonia,
+                    colonia_comunidad: coloniaSeleccionadaOficial,
                     colonia_oficial: coloniaSeleccionadaOficial,
                     respuestas: seleccionados,
                     otros: otros,
                     prioridad_ambiental: prioAmb,
                     prioridad_territorial: prioTer,
+                    bloques_sin_problemas: Array.from(document.querySelectorAll('.q-check-noaplica:checked'))
+                                                .map(c => c.getAttribute('data-bloque')),
                     total_ambiental: contarPorAgenda('ambiental'),
                     total_territorial: contarPorAgenda('territorial'),
                     lat: selectedLocation ? selectedLocation.lat : null,
@@ -6219,6 +6752,8 @@
                         delete alterno.total_ambiental;
                         delete alterno.total_territorial;
                         delete alterno.colonia_oficial;
+                        delete alterno.bloques_sin_problemas;
+                        delete alterno.folio;
                         alterno.otros = Object.assign({}, payload.otros, {
                             '_PRIORIDAD_AMBIENTAL': JSON.stringify(prioAmb),
                             '_PRIORIDAD_TERRITORIAL': JSON.stringify(prioTer),
@@ -6286,8 +6821,9 @@
                     }
                 }
 
+                const folioEnviado = folioSesion;
                 limpiarCuestionario();
-                mostrarNotificacion('✅ Cuestionario enviado. ¡Gracias por participar!', 'success');
+                mostrarNotificacion(`✅ Enviado. Su folio es ${folioEnviado} — anótelo si desea consultar o cancelar sus datos`, 'success');
 
             } catch (error) {
                 console.error('Error al enviar el cuestionario:', error);
@@ -6302,6 +6838,9 @@
         // Limpia el formulario por completo para el siguiente participante.
         function limpiarCuestionario() {
             document.querySelectorAll('.q-check').forEach(c => { c.checked = false; });
+            document.querySelectorAll('.q-check-noaplica').forEach(c => { c.checked = false; });
+            document.querySelectorAll('.q-acc').forEach(c => { delete c.dataset.autoAbierto; });
+            folioSesion = generarFolio();
             document.querySelectorAll('.q-otro-input').forEach(i => { i.value = ''; });
             prioridades.ambiental = [];
             prioridades.territorial = [];
@@ -6317,7 +6856,7 @@
             });
             const alertaUbi = document.getElementById('q-alerta-ubi');
             if (alertaUbi) alertaUbi.classList.remove('visible');
-            ['q-nombre', 'q-edad', 'q-anios', 'q-ocupacion-otro', 'q-trabajo-otro'].forEach(id => {
+            ['q-edad', 'q-anios', 'q-ocupacion-otro', 'q-trabajo-otro'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
             ['q-sexo', 'q-nacio', 'q-escolaridad', 'q-ocupacion', 'q-trabajo', 'q-adscripcion'].forEach(n => {
@@ -6327,6 +6866,7 @@
             {
                 const col = document.getElementById('q-colonia'); if (col) col.value = '';
                 coloniaSeleccionadaOficial = null;
+                if (col) col.readOnly = false;
                 actualizarEstadoColonia();
                 const repOtro = document.getElementById('q-representacion-otro'); if (repOtro) repOtro.value = '';
                 document.querySelectorAll('input[name="q-representacion"]').forEach(r => { r.checked = false; });
@@ -6354,3 +6894,4 @@
     </script>
 </body>
 </html>
+

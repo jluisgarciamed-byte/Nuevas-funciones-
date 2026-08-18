@@ -324,7 +324,103 @@
         }
         .q-prio-contador.completo { color: var(--warning); font-weight: 600; }
 
-        /* Aviso de ubicación obligatoria */
+        /* ===== UBICACIÓN POR PROBLEMÁTICA =====
+           Cada problema marcado exige su propia geometría: la fila aparece al marcar
+           la casilla y no se puede enviar el cuestionario mientras siga en rojo. */
+        .q-item { border-radius: 8px; transition: background 0.25s ease; }
+        .q-item.activo { background: rgba(255,255,255,0.04); padding-bottom: 0.15rem; }
+        .q-item.resaltado {
+            animation: q-parpadeo 0.7s ease-in-out 3;
+        }
+        @keyframes q-parpadeo {
+            0%, 100% { background: rgba(239,68,68,0.05); }
+            50%      { background: rgba(239,68,68,0.32); }
+        }
+        .q-ubi { display: none; padding: 0 0.2rem 0.55rem 1.75rem; }
+        .q-ubi.visible { display: block; }
+        .q-ubi-estado {
+            display: flex; align-items: center; gap: 0.4rem;
+            font-size: 0.76rem; font-weight: 600; color: #fca5a5;
+            margin-bottom: 0.4rem;
+        }
+        .q-ubi.ubicado .q-ubi-estado { color: var(--success); }
+        .q-ubi.esperando .q-ubi-estado { color: var(--info); }
+        .q-ubi.esperando .q-ubi-estado::after {
+            content: ' — toque el mapa'; font-weight: 400; font-style: italic;
+        }
+        .q-ubi-botones { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+        .q-ubi-btn {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.3rem 0.55rem; border-radius: 999px; cursor: pointer;
+            border: 1px solid var(--border); background: rgba(0,0,0,0.25);
+            color: var(--gray); font-family: inherit; font-size: 0.73rem;
+            transition: all 0.2s ease;
+        }
+        .q-ubi-btn:hover { background: var(--primary-light); color: var(--light); }
+        .q-ubi-btn-alt { border-style: dashed; }
+        .q-ubi-btn-borrar { display: none; }
+        .q-ubi.ubicado .q-ubi-btn-borrar { display: inline-flex; }
+        .q-ubi.ubicado .q-ubi-btn:not(.q-ubi-btn-borrar) { display: none; }
+
+        /* Marcador numerado de cada problemática en el mapa */
+        .marcador-problema span {
+            display: flex; align-items: center; justify-content: center;
+            width: 30px; height: 30px; border-radius: 50%;
+            color: #06281f; font-size: 0.68rem; font-weight: 700;
+            border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+        }
+
+        .q-contador-wrap.alerta {
+            background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4);
+        }
+        /* ===== AUTOCOMPLETADO DE COLONIA ===== */
+        .q-auto-wrap { position: relative; }
+        .q-auto-lista {
+            display: none; position: absolute; z-index: 40; left: 0; right: 0;
+            max-height: 230px; overflow-y: auto; margin-top: 0.25rem;
+            background: var(--primary-dark); border: 1px solid var(--border);
+            border-radius: 10px; box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+        }
+        .q-auto-item {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 0.6rem; padding: 0.55rem 0.75rem; cursor: pointer;
+            font-size: 0.85rem; color: var(--light);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .q-auto-item:last-child { border-bottom: none; }
+        .q-auto-item:hover, .q-auto-item.activo { background: var(--primary-light); }
+        .q-auto-tipo {
+            flex-shrink: 0; font-size: 0.68rem; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--gray);
+            border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.45rem;
+        }
+        .q-auto-estado {
+            display: flex; align-items: center; gap: 0.35rem;
+            font-size: 0.74rem; margin-top: 0.35rem; min-height: 1rem;
+        }
+        .q-auto-estado.ok    { color: var(--success); }
+        .q-auto-estado.libre { color: var(--warning); }
+
+        /* ===== GUÍA DIDÁCTICA DE GEOMETRÍAS ===== */
+        .q-guia { display: flex; flex-direction: column; gap: 0.55rem; }
+        .q-guia-fila {
+            display: flex; align-items: flex-start; gap: 0.6rem;
+            padding: 0.55rem 0.6rem; border-radius: 9px;
+            background: rgba(0,0,0,0.18); border: 1px solid var(--border);
+        }
+        .q-guia-icono {
+            flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+        }
+        .q-guia-fila strong {
+            display: block; font-size: 0.85rem; color: var(--light); margin-bottom: 0.15rem;
+        }
+        .q-guia-fila span:not(.q-guia-icono) {
+            display: block; font-size: 0.78rem; color: var(--gray); line-height: 1.45;
+        }
+
+        /* Aviso de ubicación de referencia faltante */
         .q-alerta-ubi {
             display: none; gap: 0.55rem; align-items: flex-start;
             background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4);
@@ -1568,32 +1664,54 @@
                         </div>
                     </div>
 
-                    <!-- Panel de Tipo de Aportación Geográfica -->
+                    <!-- Panel didáctico: qué representa cada tipo de geometría -->
                     <div class="panel">
                         <div class="panel-header">
                             <i class="fas fa-draw-polygon"></i>
-                            <h3>Tipo de Aportación Geográfica</h3>
+                            <h3>Cómo se ubica cada problema</h3>
                         </div>
                         <div class="panel-body">
-                            <div class="form-group">
-                                <label>Selecciona cómo mapear tu aportación</label>
-                                <div class="filter-chips">
-                                    <div class="chip active" data-tipo="punto">
-                                        <i class="fas fa-map-marker-alt"></i> Punto
-                                    </div>
-                                    <div class="chip" data-tipo="poligono">
-                                        <i class="fas fa-draw-polygon"></i> Área
-                                    </div>
-                                    <div class="chip" data-tipo="linea">
-                                        <i class="fas fa-route"></i> Corredor
+                            <p class="q-ayuda" style="margin-bottom:0.8rem;">Al marcar un problema
+                            aparecen estos botones debajo. Elija según la forma que tenga el
+                            problema en el terreno.</p>
+
+                            <div class="q-guia">
+                                <div class="q-guia-fila">
+                                    <span class="q-guia-icono" style="background:rgba(16,185,129,0.18);color:#10b981;">
+                                        <i class="fas fa-map-pin"></i>
+                                    </span>
+                                    <div>
+                                        <strong>Punto</strong>
+                                        <span>Un lugar exacto: un tiradero, un pozo, una esquina peligrosa, una fábrica que contamina.</span>
                                     </div>
                                 </div>
-                            </div>
-                            <div id="geometry-instructions" class="info-item" style="margin-top: 1rem; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);">
-                                <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
-                                <p style="margin: 0; font-size: 0.85rem; color: var(--light);">
-                                    <strong>Punto:</strong> Marca una ubicación específica haciendo clic en el mapa
-                                </p>
+                                <div class="q-guia-fila">
+                                    <span class="q-guia-icono" style="background:rgba(245,158,11,0.18);color:#f59e0b;">
+                                        <i class="fas fa-route"></i>
+                                    </span>
+                                    <div>
+                                        <strong>Calle o tramo</strong>
+                                        <span>Algo que ocurre a lo largo de una vía: una calle sin pavimento, un canal azolvado, una ruta sin transporte.</span>
+                                    </div>
+                                </div>
+                                <div class="q-guia-fila">
+                                    <span class="q-guia-icono" style="background:rgba(59,130,246,0.18);color:#3b82f6;">
+                                        <i class="fas fa-draw-polygon"></i>
+                                    </span>
+                                    <div>
+                                        <strong>Zona</strong>
+                                        <span>Algo que abarca un área: una parte que se inunda, un sector sin drenaje, un cerro que se está talando.</span>
+                                    </div>
+                                </div>
+                                <div class="q-guia-fila">
+                                    <span class="q-guia-icono" style="background:rgba(255,255,255,0.1);color:var(--gray);">
+                                        <i class="fas fa-house-flag"></i>
+                                    </span>
+                                    <div>
+                                        <strong>Toda mi colonia</strong>
+                                        <span>Solo cuando de verdad afecta parejo a todo el lugar, como que no pase el camión de basura. Si tiene un punto concreto, es mejor marcarlo.</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1624,12 +1742,16 @@
 
                             <div class="q-alerta-ubi" id="q-alerta-ubi">
                                 <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-                                <span>Falta ubicar su colonia o comunidad en el mapa. Sin ubicación
-                                el problema no se puede localizar y la aportación no entra al programa.</span>
+                                <span>Falta marcar el punto de referencia de su colonia o comunidad.
+                                Sirve para situarla en el mapa y para la opción "Toda mi colonia"
+                                de cada problema.</span>
                             </div>
 
                             <div class="form-group">
-                                <label>Ubicación de su colonia o comunidad <span class="q-req">*</span></label>
+                                <label>Punto de referencia de su colonia o comunidad <span class="q-req">*</span></label>
+                                <p class="q-ayuda" style="margin-bottom:0.6rem;">Marque el centro
+                                aproximado: la plaza, la delegación, la entrada principal. Cada
+                                problema se ubica aparte, en el lugar exacto donde ocurre.</p>
                                 <div class="coords-container">
                                     <div class="coords-display">
                                         <i class="fas fa-map-marker-alt"></i>
@@ -1663,13 +1785,6 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="checkbox" id="modo-taller" style="width: auto;">
-                                    Modo Taller (capturar varios cuestionarios en la misma sesión)
-                                </label>
                             </div>
                             
                             <button type="button" id="report-send" class="btn btn-send">
@@ -2584,11 +2699,17 @@
 
             map.on(L.Draw.Event.CREATED, function (e) {
                 const layer = e.layer;
-                const modoTaller = document.getElementById('modo-taller').checked;
 
-                // Fuera de Modo Taller solo se conserva un trazo activo: la UI
-                // mostraba varios pero al enviar solo viajaba el último.
-                if (!modoTaller && e.layerType !== 'marker') {
+                // Si hay una problemática esperando ubicación, el trazo le pertenece a
+                // ella y no a la referencia general de la colonia.
+                if (problemaEnUbicacion) {
+                    asignarGeometriaAProblema(problemaEnUbicacion, layer.toGeoJSON().geometry);
+                    desactivarDibujoProblema();
+                    return;
+                }
+
+                // Referencia de la colonia: solo se conserva un trazo activo.
+                if (e.layerType !== 'marker') {
                     drawnItems.clearLayers();
                 }
 
@@ -2657,74 +2778,65 @@
         }
 
         // ===== FUNCIÓN: ACTIVAR HERRAMIENTAS DE DIBUJO SEGÚN TIPO =====
-        function activarHerramientaDibujo(tipo) {
-            // Limpiar dibujos anteriores
-            drawnItems.clearLayers();
-            currentDrawnGeometry = null;
-            
-            // Si la ubicación seleccionada provenía de una geometría dibujada (tiene
-            // .geometry), al borrarla el texto de coordenadas quedaba diciendo
-            // "Geometría creada" sin que existiera ya nada en memoria.
-            if (selectedLocation && selectedLocation.geometry) {
-                selectedLocation = null;
-                document.getElementById('coords-text').textContent = 'No seleccionada';
-                document.getElementById('lat-input').value = '';
-                document.getElementById('lng-input').value = '';
+        // Activa la barra de dibujo para el tipo de geometría solicitado. Se usa tanto
+        // para la referencia de la colonia como para cada problemática: la diferencia
+        // la marca problemaEnUbicacion, que enruta el trazo resultante.
+        function activarHerramientaDibujo(tipo, opciones = {}) {
+            if (!opciones.conservarTrazos && !problemaEnUbicacion) {
+                drawnItems.clearLayers();
+                currentDrawnGeometry = null;
+                if (selectedLocation && selectedLocation.geometry) {
+                    selectedLocation = null;
+                    const ct = document.getElementById('coords-text');
+                    if (ct) ct.textContent = 'No seleccionada';
+                    const li = document.getElementById('lat-input'); if (li) li.value = '';
+                    const gi = document.getElementById('lng-input'); if (gi) gi.value = '';
+                }
             }
-            
-            // BUG corregido: map.hasLayer() siempre devuelve false para un Control,
-            // por lo que el control anterior nunca se quitaba y las barras de dibujo
-            // se apilaban una sobre otra con cada cambio de tipo.
+
+            // map.hasLayer() siempre devuelve false para un Control, por lo que el
+            // control anterior nunca se quitaba y las barras se apilaban.
             if (drawControl) {
                 map.removeControl(drawControl);
                 drawControl = null;
             }
-            
-            // Configurar control según tipo
-            let drawOptions = {
+
+            const drawOptions = {
                 position: 'topleft',
                 draw: {
-                    polyline: false,
-                    polygon: false,
-                    circle: false,
-                    rectangle: false,
-                    marker: false,
-                    circlemarker: false
+                    polyline: false, polygon: false, circle: false,
+                    rectangle: false, marker: false, circlemarker: false
                 },
-                edit: {
-                    featureGroup: drawnItems,
-                    remove: true
-                }
+                edit: { featureGroup: drawnItems, remove: true }
             };
-            
+
             if (tipo === 'linea') {
-                drawOptions.draw.polyline = {
-                    shapeOptions: { color: '#f59e0b', weight: 4 }
-                };
+                drawOptions.draw.polyline = { shapeOptions: { color: '#f59e0b', weight: 4 } };
             } else if (tipo === 'poligono') {
-                drawOptions.draw.polygon = {
-                    shapeOptions: { color: '#3b82f6', fillOpacity: 0.3 }
-                };
+                drawOptions.draw.polygon = { shapeOptions: { color: '#3b82f6', fillOpacity: 0.3 } };
             } else if (tipo === 'punto') {
                 drawOptions.draw.marker = true;
             }
-            
+
             drawControl = new L.Control.Draw(drawOptions);
             map.addControl(drawControl);
-            
-            // Actualizar instrucciones (manteniendo la estructura/estilo del HTML inicial)
-            const instrucciones = document.getElementById('geometry-instructions');
-            const textos = {
-                punto: '<strong>Punto:</strong> Marca una ubicación específica haciendo clic en el mapa, con "Usar mi Ubicación" o con la herramienta de la izquierda',
-                poligono: '<strong>Área:</strong> Dibuja un polígono con la herramienta de la izquierda (zona de conflicto, área de oportunidad)',
-                linea: '<strong>Corredor:</strong> Dibuja una línea con la herramienta de la izquierda (ej. ruta de transporte problemática)'
-            };
-            instrucciones.innerHTML = `
-                <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
-                <p style="margin: 0; font-size: 0.85rem; color: var(--light);">
-                    ${textos[tipo] || textos.punto}
-                </p>
-            `;
+        }
+
+        // Lanza la herramienta de dibujo ya abierta, sin obligar a buscar el botón en
+        // la esquina del mapa. En móvil además cierra el panel, que tapa el mapa.
+        function abrirDibujoInmediato(tipo) {
+            activarHerramientaDibujo(tipo, { conservarTrazos: true });
+            try {
+                const handler = tipo === 'linea'
+                    ? new L.Draw.Polyline(map, drawControl.options.draw.polyline)
+                    : tipo === 'poligono'
+                        ? new L.Draw.Polygon(map, drawControl.options.draw.polygon)
+                        : null;
+                if (handler) handler.enable();
+            } catch (err) {
+                console.warn('No se pudo abrir la herramienta de dibujo:', err);
+            }
+            if (isMobile && sidebarState !== 'closed') toggleSidebar();
         }
 
         // ===== FUNCIONES DE BÚSQUEDA =====
@@ -4844,87 +4956,6 @@
             mostrarNotificacion(`✅ Archivo ${nombreArchivo} descargado exitosamente`, 'success');
         }
 
-        // ===== FUNCIONES AUXILIARES PARA EXPORTACIÓN DE TRAZOS DE TALLER =====
-        
-        // Función helper para construir atributos del formulario
-        function construirAtributosTallerDesdeFormulario() {
-            return {
-                nombre: document.getElementById('nombre').value.trim(),
-                tema: document.getElementById('tema').value,
-                tipo_aporte: document.getElementById('tipo-aporte').value,
-                ambito: document.getElementById('ambito-aporte').value,
-                prioridad: document.getElementById('prioridad').value,
-                codigo_sesion: document.getElementById('codigo-sesion').value.trim(),
-                comentarios: document.getElementById('comentarios').value.trim(),
-                modo_taller: document.getElementById('modo-taller').checked,
-                fecha_exportacion: new Date().toISOString()
-            };
-        }
-
-        // Función para calcular centroide de una geometría
-        function calcularCentroideGeometria(feature) {
-            try {
-                const layer = L.geoJSON(feature);
-                const bounds = layer.getBounds();
-                if (bounds && bounds.isValid()) {
-                    const center = bounds.getCenter();
-                    return { lat: center.lat, lng: center.lng };
-                }
-            } catch (e) {
-                console.warn('No se pudo calcular el centroide para la feature', e);
-            }
-            return { lat: null, lng: null };
-        }
-
-        // Exportar trazos de taller CON ATRIBUTOS COMPLETOS
-        function exportarTrazosTallerGeoJSON() {
-            if (!drawnItems || drawnItems.getLayers().length === 0) {
-                alert('No hay trazos de taller dibujados en el mapa.');
-                return;
-            }
-            
-            // Obtener atributos del formulario
-            const atributosFormulario = construirAtributosTallerDesdeFormulario();
-            
-            // Obtener el FeatureCollection original
-            const originalGeoJSON = drawnItems.toGeoJSON();
-            
-            // Crear un nuevo FeatureCollection con las propiedades extendidas
-            const featuresConAtributos = {
-                type: 'FeatureCollection',
-                features: originalGeoJSON.features.map(feature => {
-                    // Calcular centroide
-                    const centroide = calcularCentroideGeometria(feature);
-                    
-                    // Combinar propiedades: primero las existentes, luego las del formulario (prevalece formulario)
-                    const propiedades = {
-                        ...feature.properties,
-                        ...atributosFormulario,
-                        geometry_type: feature.geometry.type,
-                        lat_centroide: centroide.lat,
-                        lng_centroide: centroide.lng
-                    };
-                    
-                    return {
-                        ...feature,
-                        properties: propiedades
-                    };
-                })
-            };
-            
-            const blob = new Blob([JSON.stringify(featuresConAtributos, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'trazos_taller.geojson';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            mostrarNotificacion('✅ Trazos de taller exportados exitosamente con atributos completos', 'success');
-        }
-
         // ===== INICIALIZAR EVENTOS =====
         function inicializarEventos() {
             // Búsqueda con debounce: filtrar y reconstruir resultados en cada tecla
@@ -4977,6 +5008,14 @@
 
             // Mapa
             map.on('click', function(e) {
+                // Un problema esperando ubicación tiene preferencia sobre la referencia
+                // general: es el modo en que se localiza cada problemática por separado.
+                if (problemaEnUbicacion) {
+                    asignarGeometriaAProblema(problemaEnUbicacion,
+                        { type: 'Point', coordinates: [e.latlng.lng, e.latlng.lat] });
+                    desactivarDibujoProblema();
+                    return;
+                }
                 if (isPickingLocation) {
                     establecerUbicacion(e.latlng.lat, e.latlng.lng);
                     desactivarSeleccionUbicacion();
@@ -5027,26 +5066,6 @@
                     // #17 — Refrescar el mapa por si el contenedor cambió de tamaño
                     // (evita tiles grises tras rotar el dispositivo o cambiar de pestaña).
                     if (map) setTimeout(() => map.invalidateSize(), 50);
-                });
-            });
-
-            // Tipo de geometría
-            document.querySelectorAll('[data-tipo]').forEach(chip => {
-                chip.addEventListener('click', function() {
-                    const tipo = this.getAttribute('data-tipo');
-                    currentGeometryType = tipo;
-                    
-                    document.querySelectorAll('[data-tipo]').forEach(c => c.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    activarHerramientaDibujo(tipo);
-                    
-                    // En móvil el sidebar cubre el mapa: sin esto era imposible
-                    // dibujar un área o corredor después de elegir el chip.
-                    if (isMobile && sidebarState !== 'closed' && (tipo === 'poligono' || tipo === 'linea')) {
-                        toggleSidebar();
-                        mostrarToast('Usa la herramienta de dibujo en la esquina superior izquierda del mapa', 'warning');
-                    }
                 });
             });
 
@@ -5314,11 +5333,14 @@
             const items = grupo.opciones.map((texto, i) => {
                 const codigo = `${grupo.pre}.${i + 1}`;
                 return `
-                <label class="q-opcion">
-                    <input type="checkbox" class="q-check" value="${codigo}"
-                           data-agenda="${agenda}" data-texto="${escapeHTML(texto)}">
-                    <span>${escapeHTML(texto)}</span>
-                </label>`;
+                <div class="q-item" data-codigo="${codigo}">
+                    <label class="q-opcion">
+                        <input type="checkbox" class="q-check" value="${codigo}"
+                               data-agenda="${agenda}" data-texto="${escapeHTML(texto)}">
+                        <span>${escapeHTML(texto)}</span>
+                    </label>
+                    ${filaUbicacion(codigo)}
+                </div>`;
             }).join('');
             const codigoOtro = `${grupo.pre}.${grupo.opciones.length + 1}`;
             const idPanel = `panel-${grupo.pre}`;
@@ -5331,12 +5353,44 @@
                 </button>
                 <div class="q-acc-body" id="${idPanel}">
                     ${items}
-                    <div class="q-otro">
+                    <div class="q-otro q-item" data-codigo="${codigoOtro}">
                         <label for="otro-${codigoOtro}">${escapeHTML(grupo.otro)}</label>
                         <input type="text" id="otro-${codigoOtro}" class="form-input q-otro-input"
                                data-codigo="${codigoOtro}" data-agenda="${agenda}"
                                maxlength="300" placeholder="Escriba aquí si aplica">
+                        ${filaUbicacion(codigoOtro)}
                     </div>
+                </div>
+            </div>`;
+        }
+
+        // Fila de ubicación que acompaña a cada problemática. Permanece oculta hasta
+        // que la persona marca el problema y, a partir de ahí, es obligatoria: la
+        // lógica del mapeo temático exige que cada problema se localice donde ocurre,
+        // no que un bloque entero comparta un mismo punto.
+        function filaUbicacion(codigo) {
+            return `
+            <div class="q-ubi" data-ubi="${codigo}">
+                <div class="q-ubi-estado">
+                    <i class="fas fa-location-dot" aria-hidden="true"></i>
+                    <span class="q-ubi-texto">Falta ubicar en el mapa</span>
+                </div>
+                <div class="q-ubi-botones">
+                    <button type="button" class="q-ubi-btn" data-accion="punto" data-cod="${codigo}">
+                        <i class="fas fa-map-pin" aria-hidden="true"></i> Punto
+                    </button>
+                    <button type="button" class="q-ubi-btn" data-accion="linea" data-cod="${codigo}">
+                        <i class="fas fa-route" aria-hidden="true"></i> Calle o tramo
+                    </button>
+                    <button type="button" class="q-ubi-btn" data-accion="poligono" data-cod="${codigo}">
+                        <i class="fas fa-draw-polygon" aria-hidden="true"></i> Zona
+                    </button>
+                    <button type="button" class="q-ubi-btn q-ubi-btn-alt" data-accion="colonia" data-cod="${codigo}">
+                        <i class="fas fa-house-flag" aria-hidden="true"></i> Toda mi colonia
+                    </button>
+                    <button type="button" class="q-ubi-btn q-ubi-btn-borrar" data-accion="borrar" data-cod="${codigo}">
+                        <i class="fas fa-rotate-left" aria-hidden="true"></i> Cambiar
+                    </button>
                 </div>
             </div>`;
         }
@@ -5421,9 +5475,16 @@
 
             <fieldset class="q-seccion">
                 <legend class="q-seccion-titulo">Sección 3. ¿Qué lugar representa?</legend>
-                <div class="form-group">
+                <div class="form-group q-auto-wrap">
                     <label for="q-colonia">3.1 Nombre exacto de su colonia o comunidad <span class="q-req">*</span></label>
-                    <input type="text" id="q-colonia" class="form-input" maxlength="150" placeholder="Escriba el nombre completo" required>
+                    <p class="q-ayuda" style="margin-bottom:0.5rem;">Empiece a escribir y elija de la
+                    lista. Si no aparece, escríbalo completo y el equipo lo revisará.</p>
+                    <input type="text" id="q-colonia" class="form-input" maxlength="150"
+                           placeholder="Escriba y seleccione de la lista" autocomplete="off"
+                           role="combobox" aria-autocomplete="list" aria-expanded="false"
+                           aria-controls="q-colonia-lista" required>
+                    <div id="q-colonia-lista" class="q-auto-lista" role="listbox"></div>
+                    <div id="q-colonia-estado" class="q-auto-estado"></div>
                 </div>
             </fieldset>
 
@@ -5431,7 +5492,8 @@
                 <legend class="q-seccion-titulo">Sección 4. Agenda ambiental</legend>
                 <p class="q-ayuda">Problemas del agua, el aire, el suelo, la basura y la naturaleza.
                 Abra cada tema y marque todas las opciones que sucedan en su comunidad o colonia;
-                no se limite.</p>
+                no se limite. <strong>Cada problema que marque le pedirá enseguida su ubicación:
+                señale el lugar exacto donde ocurre, no el centro de la colonia.</strong></p>
                 ${AGENDA_AMBIENTAL.map(grupoAgenda).join('')}
 
                 <div class="q-prio-caja">
@@ -5447,7 +5509,8 @@
                 <legend class="q-seccion-titulo">Sección 5. Agenda territorial</legend>
                 <p class="q-ayuda">Problemas de la ciudad, las comunidades, los servicios y la
                 convivencia. Abra cada tema y marque todas las opciones que sucedan en su comunidad
-                o colonia.</p>
+                o colonia. <strong>Cada problema se ubica por separado: use "Calle o tramo" para lo
+                que ocurre a lo largo de una vía y "Zona" para lo que abarca un área.</strong></p>
                 ${AGENDA_TERRITORIAL.map(grupoAgenda).join('')}
 
                 <div class="q-prio-caja">
@@ -5461,8 +5524,18 @@
 
             cont.innerHTML = html;
 
-            // Acordeón: abre y cierra cada bloque temático.
+            // Acordeón y botones de ubicación por problemática.
             cont.addEventListener('click', function (ev) {
+                const btnUbi = ev.target.closest('.q-ubi-btn');
+                if (btnUbi) {
+                    ev.preventDefault();
+                    const cod = btnUbi.getAttribute('data-cod');
+                    const accion = btnUbi.getAttribute('data-accion');
+                    if (accion === 'borrar') borrarUbicacionProblema(cod);
+                    else if (accion === 'colonia') usarUbicacionColonia(cod);
+                    else iniciarUbicacionProblema(cod, accion);
+                    return;
+                }
                 const head = ev.target.closest('.q-acc-head');
                 if (!head) return;
                 const caja = head.closest('.q-acc');
@@ -5470,7 +5543,7 @@
                 head.setAttribute('aria-expanded', abierto ? 'true' : 'false');
             });
 
-            // Cualquier cambio recalcula avance y reconstruye la priorización.
+            // Cualquier cambio recalcula avance, ubicaciones y priorización.
             cont.addEventListener('change', alCambiarCuestionario);
             // El texto de "Otro" se escribe sin disparar change hasta perder foco;
             // input mantiene la lista de priorización sincronizada al teclear.
@@ -5479,10 +5552,12 @@
                 else if (ev.target.id === 'q-colonia') actualizarContadorCuestionario();
             });
 
+            inicializarAutocompletadoColonia();
             alCambiarCuestionario();
         }
 
         function alCambiarCuestionario() {
+            actualizarTodasLasFilasUbicacion();
             actualizarContadorCuestionario();
             actualizarBadgesBloques();
             reconstruirPriorizacion('ambiental');
@@ -5505,16 +5580,25 @@
             const amb = contarPorAgenda('ambiental');
             const ter = contarPorAgenda('territorial');
             const total = amb + ter;
+            const faltan = problemasSinUbicar().length;
 
-            cont.textContent = total === 0
-                ? 'Aún no ha marcado ningún problema'
-                : `${total} problema(s) marcado(s) · ${amb} ambiental(es) y ${ter} territorial(es)`;
+            if (total === 0) {
+                cont.textContent = 'Aún no ha marcado ningún problema';
+                cont.parentElement.classList.remove('alerta');
+            } else if (faltan > 0) {
+                cont.textContent = `${total} problema(s) marcado(s) · faltan ${faltan} por ubicar en el mapa`;
+                cont.parentElement.classList.add('alerta');
+            } else {
+                cont.textContent = `${total} problema(s) marcado(s) y ubicado(s) · ${amb} ambiental(es), ${ter} territorial(es)`;
+                cont.parentElement.classList.remove('alerta');
+            }
 
-            // Barra de avance: los cuatro pasos que el cuestionario necesita cerrar.
+            // Barra de avance: los cinco pasos que el cuestionario necesita cerrar.
             const pasos = [
                 !!valorTexto('q-colonia'),
                 !!(selectedLocation || currentDrawnGeometry),
                 total > 0,
+                total > 0 && faltan === 0,
                 prioridadesDe('ambiental').length + prioridadesDe('territorial').length > 0
             ];
             const hechos = pasos.filter(Boolean).length;
@@ -5535,6 +5619,332 @@
                 badge.textContent = n;
                 badge.classList.toggle('visible', n > 0);
             });
+        }
+
+        // ---------- Autocompletado de colonia o comunidad ----------
+        // Reutiliza el mismo padrón que alimenta el buscador del encabezado
+        // (Localidades y Colonias_SFR). Escribir el nombre a mano produce grafías
+        // distintas para el mismo lugar —"San Roque", "S. Roque", "sanroque"— y
+        // obliga a normalizar a mano cientos de registros al sistematizar.
+        let coloniaSeleccionadaOficial = null;   // nombre tal como está en el padrón
+        let coloniaIndiceActivo = -1;
+
+        function catalogoLugares() {
+            const lista = [];
+            (localidadesData || []).forEach(l => {
+                if (l.nom_loc) lista.push({ nombre: l.nom_loc, tipo: 'Localidad', item: l });
+            });
+            (coloniasData || []).forEach(c => {
+                if (c.nomcolonia) lista.push({ nombre: c.nomcolonia, tipo: 'Colonia', item: c });
+            });
+            return lista;
+        }
+
+        function inicializarAutocompletadoColonia() {
+            const input = document.getElementById('q-colonia');
+            const lista = document.getElementById('q-colonia-lista');
+            if (!input || !lista) return;
+
+            const cerrar = () => {
+                lista.style.display = 'none';
+                lista.innerHTML = '';
+                coloniaIndiceActivo = -1;
+                input.setAttribute('aria-expanded', 'false');
+            };
+
+            const pintar = () => {
+                const termino = input.value.trim();
+                coloniaSeleccionadaOficial = null;
+                actualizarEstadoColonia();
+
+                if (termino.length < 2) { cerrar(); return; }
+
+                const norm = normalizarTexto(termino);
+                const catalogo = catalogoLugares();
+                if (catalogo.length === 0) { cerrar(); return; }
+
+                // Los que empiezan con el término van primero: al teclear "san" se
+                // espera ver "San Roque" antes que "Colonia del San Juan".
+                const coincidencias = catalogo
+                    .filter(x => normalizarTexto(x.nombre).includes(norm))
+                    .sort((a, b) => {
+                        const ea = normalizarTexto(a.nombre).startsWith(norm) ? 0 : 1;
+                        const eb = normalizarTexto(b.nombre).startsWith(norm) ? 0 : 1;
+                        return ea - eb || a.nombre.localeCompare(b.nombre, 'es');
+                    })
+                    .slice(0, 8);
+
+                if (coincidencias.length === 0) { cerrar(); return; }
+
+                lista.innerHTML = coincidencias.map((x, i) => `
+                    <div class="q-auto-item" role="option" data-idx="${i}"
+                         data-nombre="${escapeHTML(x.nombre)}" data-tipo="${x.tipo}">
+                        <span>${escapeHTML(x.nombre)}</span>
+                        <span class="q-auto-tipo">${x.tipo}</span>
+                    </div>`).join('');
+                lista.style.display = 'block';
+                input.setAttribute('aria-expanded', 'true');
+                coloniaIndiceActivo = -1;
+
+                lista.querySelectorAll('.q-auto-item').forEach((el, i) => {
+                    el.addEventListener('mousedown', function (ev) {
+                        ev.preventDefault();  // evita que blur cierre antes del clic
+                        elegirLugar(coincidencias[i]);
+                        cerrar();
+                    });
+                });
+            };
+
+            const elegirLugar = (x) => {
+                input.value = x.nombre;
+                coloniaSeleccionadaOficial = x.nombre;
+                actualizarEstadoColonia();
+                actualizarContadorCuestionario();
+                // Elegir el lugar centra el mapa ahí: la persona ya no tiene que
+                // buscarlo a mano para poner el punto de referencia.
+                try { seleccionarResultadoBusqueda(x.item); } catch (e) { /* sin geometría */ }
+            };
+
+            input.addEventListener('input', pintar);
+            input.addEventListener('focus', () => { if (input.value.trim().length >= 2) pintar(); });
+            input.addEventListener('blur', () => setTimeout(cerrar, 120));
+
+            input.addEventListener('keydown', function (ev) {
+                const items = Array.from(lista.querySelectorAll('.q-auto-item'));
+                if (!items.length) return;
+                if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                    ev.preventDefault();
+                    coloniaIndiceActivo += (ev.key === 'ArrowDown' ? 1 : -1);
+                    if (coloniaIndiceActivo < 0) coloniaIndiceActivo = items.length - 1;
+                    if (coloniaIndiceActivo >= items.length) coloniaIndiceActivo = 0;
+                    items.forEach((el, i) => el.classList.toggle('activo', i === coloniaIndiceActivo));
+                    items[coloniaIndiceActivo].scrollIntoView({ block: 'nearest' });
+                } else if (ev.key === 'Enter' && coloniaIndiceActivo >= 0) {
+                    ev.preventDefault();
+                    items[coloniaIndiceActivo].dispatchEvent(new MouseEvent('mousedown'));
+                } else if (ev.key === 'Escape') {
+                    cerrar();
+                }
+            });
+        }
+
+        // Distingue un nombre tomado del padrón de uno escrito a mano. No bloquea el
+        // envío —una colonia nueva o un nombre local legítimo puede no estar en el
+        // padrón— pero deja constancia para revisarlo al sistematizar.
+        function actualizarEstadoColonia() {
+            const est = document.getElementById('q-colonia-estado');
+            const input = document.getElementById('q-colonia');
+            if (!est || !input) return;
+            const v = input.value.trim();
+            if (!v) { est.className = 'q-auto-estado'; est.textContent = ''; return; }
+            if (coloniaSeleccionadaOficial &&
+                normalizarTexto(coloniaSeleccionadaOficial) === normalizarTexto(v)) {
+                est.className = 'q-auto-estado ok';
+                est.innerHTML = '<i class="fas fa-circle-check"></i> Tomado del padrón oficial';
+            } else {
+                est.className = 'q-auto-estado libre';
+                est.innerHTML = '<i class="fas fa-pen"></i> Escrito a mano: el equipo lo revisará';
+            }
+        }
+
+        // ---------- Ubicación por problemática ----------
+        // Cada problema marcado lleva su propia geometría. Es el núcleo del mapeo
+        // temático: un tiradero, una calle sin pavimento y un pozo seco están en
+        // lugares distintos aunque los reporte la misma persona, y colapsarlos en un
+        // punto único destruye la información que hace útil el diagnóstico.
+        const ubicacionesProblemas = {};   // codigo -> { tipo, geojson, lat, lng }
+        let problemaEnUbicacion = null;    // codigo que está esperando su ubicación
+        let capaProblemas = null;          // capa Leaflet con los marcadores por problema
+
+        const COLOR_AGENDA = { ambiental: '#10b981', territorial: '#f59e0b' };
+
+        function agendaDeCodigo(codigo) {
+            return String(codigo).startsWith('AMBIENTAL') ? 'ambiental' : 'territorial';
+        }
+
+        function asegurarCapaProblemas() {
+            if (!capaProblemas) {
+                capaProblemas = L.featureGroup().addTo(map);
+            }
+            return capaProblemas;
+        }
+
+        // Entra en modo "esperando ubicación" para un problema concreto.
+        function iniciarUbicacionProblema(codigo, tipo) {
+            problemaEnUbicacion = codigo;
+            document.querySelectorAll('.q-ubi').forEach(f => f.classList.remove('esperando'));
+            const fila = document.querySelector(`.q-ubi[data-ubi="${codigo}"]`);
+            if (fila) fila.classList.add('esperando');
+
+            if (tipo === 'punto') {
+                isPickingLocation = false; // el clic lo atiende el manejador de problemas
+                mostrarToast('Toque en el mapa el lugar exacto donde ocurre este problema', 'info');
+                if (isMobile && sidebarState !== 'closed') toggleSidebar();
+            } else {
+                mostrarToast(tipo === 'linea'
+                    ? 'Trace la calle o el tramo donde ocurre; doble toque para terminar'
+                    : 'Dibuje la zona donde ocurre; doble toque para cerrar', 'info');
+                abrirDibujoInmediato(tipo);
+            }
+        }
+
+        function desactivarDibujoProblema() {
+            problemaEnUbicacion = null;
+            document.querySelectorAll('.q-ubi').forEach(f => f.classList.remove('esperando'));
+            if (drawControl) { map.removeControl(drawControl); drawControl = null; }
+        }
+
+        // Guarda la geometría y dibuja el marcador correspondiente.
+        function asignarGeometriaAProblema(codigo, geometry, tipoDeclarado) {
+            const centro = centroideDeGeometria(geometry);
+            if (!centro) {
+                mostrarNotificacion('❌ No se pudo interpretar la geometría trazada', 'error');
+                return;
+            }
+            if (!geometriaDentroDeBbox(geometry)) {
+                mostrarNotificacion('⚠️ Ese lugar queda fuera del área de cobertura. Verifíquelo.', 'warning');
+                return;
+            }
+            if (geometry.type !== 'Point') {
+                const topo = validarTopologiaGeometria(geometry);
+                if (!topo.valido) { mostrarNotificacion('⚠️ ' + topo.motivo, 'warning'); return; }
+            }
+
+            ubicacionesProblemas[codigo] = {
+                tipo: tipoDeclarado || tipoDesdeGeometria(geometry),
+                geojson: geometry,
+                lat: centro.lat,
+                lng: centro.lng
+            };
+            redibujarProblemasEnMapa();
+            actualizarFilaUbicacion(codigo);
+            actualizarContadorCuestionario();
+            mostrarToast('Ubicación guardada', 'success');
+        }
+
+        function tipoDesdeGeometria(g) {
+            if (!g) return 'punto';
+            if (g.type === 'Point') return 'punto';
+            if (g.type === 'LineString' || g.type === 'MultiLineString') return 'linea';
+            return 'poligono';
+        }
+
+        function centroideDeGeometria(g) {
+            try {
+                if (g.type === 'Point') return { lat: g.coordinates[1], lng: g.coordinates[0] };
+                const capa = L.geoJSON(g);
+                const c = capa.getBounds().getCenter();
+                return { lat: c.lat, lng: c.lng };
+            } catch (e) { return null; }
+        }
+
+        // "Toda mi colonia": usa la ubicación de referencia declarada en la Sección 3.
+        // No se inventa un polígono que nadie dibujó; se marca el alcance como colonia
+        // para que en el análisis se distinga de un punto exacto.
+        function usarUbicacionColonia(codigo) {
+            if (!selectedLocation && !currentDrawnGeometry) {
+                mostrarNotificacion('⚠️ Primero marque la ubicación de referencia de su colonia, más abajo en el formulario', 'warning');
+                const alerta = document.getElementById('q-alerta-ubi');
+                if (alerta) { alerta.classList.add('visible'); alerta.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                return;
+            }
+            const geom = currentDrawnGeometry ||
+                { type: 'Point', coordinates: [selectedLocation.lng, selectedLocation.lat] };
+            asignarGeometriaAProblema(codigo, JSON.parse(JSON.stringify(geom)), 'colonia');
+        }
+
+        function borrarUbicacionProblema(codigo) {
+            delete ubicacionesProblemas[codigo];
+            redibujarProblemasEnMapa();
+            actualizarFilaUbicacion(codigo);
+            actualizarContadorCuestionario();
+        }
+
+        // Refresca el estado visual de la fila de un problema.
+        function actualizarFilaUbicacion(codigo) {
+            const item = document.querySelector(`.q-item[data-codigo="${codigo}"]`);
+            if (!item) return;
+            const fila = item.querySelector('.q-ubi');
+            if (!fila) return;
+
+            const activo = problemaEstaActivo(codigo);
+            item.classList.toggle('activo', activo);
+            fila.classList.toggle('visible', activo);
+
+            const u = ubicacionesProblemas[codigo];
+            const txt = fila.querySelector('.q-ubi-texto');
+            fila.classList.toggle('ubicado', !!u);
+            if (u) {
+                const etiquetas = {
+                    punto: 'Punto marcado', linea: 'Calle o tramo trazado',
+                    poligono: 'Zona dibujada', colonia: 'Toda la colonia'
+                };
+                txt.textContent = `${etiquetas[u.tipo] || 'Ubicado'} · ${u.lat.toFixed(5)}, ${u.lng.toFixed(5)}`;
+            } else {
+                txt.textContent = 'Falta ubicar en el mapa';
+            }
+        }
+
+        function problemaEstaActivo(codigo) {
+            const chk = document.querySelector(`.q-check[value="${codigo}"]`);
+            if (chk) return chk.checked;
+            const otro = document.querySelector(`.q-otro-input[data-codigo="${codigo}"]`);
+            return !!(otro && otro.value.trim());
+        }
+
+        function actualizarTodasLasFilasUbicacion() {
+            // Un problema que se desmarca pierde su ubicación: dejarla colgando
+            // produciría geometrías huérfanas en la base.
+            Object.keys(ubicacionesProblemas).forEach(cod => {
+                if (!problemaEstaActivo(cod)) delete ubicacionesProblemas[cod];
+            });
+            document.querySelectorAll('.q-item').forEach(it => {
+                actualizarFilaUbicacion(it.getAttribute('data-codigo'));
+            });
+            redibujarProblemasEnMapa();
+        }
+
+        function redibujarProblemasEnMapa() {
+            const capa = asegurarCapaProblemas();
+            capa.clearLayers();
+            Object.keys(ubicacionesProblemas).forEach(cod => {
+                const u = ubicacionesProblemas[cod];
+                const color = COLOR_AGENDA[agendaDeCodigo(cod)];
+                const texto = textoDeProblema(cod);
+                const etiqueta = `<strong>${escapeHTML(cod)}</strong><br>${escapeHTML(texto)}`;
+
+                if (u.geojson.type !== 'Point') {
+                    L.geoJSON(u.geojson, {
+                        style: { color: color, weight: 4, fillOpacity: 0.25 }
+                    }).bindPopup(etiqueta).addTo(capa);
+                }
+                L.marker([u.lat, u.lng], {
+                    icon: L.divIcon({
+                        className: 'marcador-problema',
+                        html: `<span style="background:${color}">${escapeHTML(cod.split('-')[1] || '')}</span>`,
+                        iconSize: [34, 34], iconAnchor: [17, 17]
+                    })
+                }).bindPopup(etiqueta).addTo(capa);
+            });
+        }
+
+        function textoDeProblema(codigo) {
+            const chk = document.querySelector(`.q-check[value="${codigo}"]`);
+            if (chk) return chk.getAttribute('data-texto') || codigo;
+            const otro = document.querySelector(`.q-otro-input[data-codigo="${codigo}"]`);
+            return (otro && otro.value.trim()) || codigo;
+        }
+
+        function problemasSinUbicar() {
+            const faltan = [];
+            document.querySelectorAll('.q-check:checked').forEach(c => {
+                if (!ubicacionesProblemas[c.value]) faltan.push(c.value);
+            });
+            document.querySelectorAll('.q-otro-input').forEach(i => {
+                const cod = i.getAttribute('data-codigo');
+                if (i.value.trim() && !ubicacionesProblemas[cod]) faltan.push(cod);
+            });
+            return faltan;
         }
 
         // ---------- Priorización ----------
@@ -5692,6 +6102,28 @@
             }
             if (alertaUbi) alertaUbi.classList.remove('visible');
 
+            // Cada problema marcado debe tener su propia ubicación. Sin esto el mapeo
+            // temático se degrada: todos los problemas de una persona caerían en el
+            // mismo punto y el diagnóstico perdería la localización que lo hace útil.
+            const faltantes = problemasSinUbicar();
+            if (faltantes.length > 0) {
+                mostrarNotificacion(`⚠️ Faltan ${faltantes.length} problema(s) por ubicar en el mapa`, 'warning');
+                const primero = faltantes[0];
+                const item = document.querySelector(`.q-item[data-codigo="${primero}"]`);
+                if (item) {
+                    const caja = item.closest('.q-acc');
+                    if (caja && !caja.classList.contains('abierto')) {
+                        caja.classList.add('abierto');
+                        const h = caja.querySelector('.q-acc-head');
+                        if (h) h.setAttribute('aria-expanded', 'true');
+                    }
+                    item.classList.add('resaltado');
+                    setTimeout(() => item.classList.remove('resaltado'), 2400);
+                    item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+            }
+
             // Priorización: se avisa si marcó problemas pero no eligió los más graves,
             // porque esa jerarquía es la que alimenta la agenda del programa.
             const prioAmb = empaquetarPrioridades('ambiental');
@@ -5745,6 +6177,7 @@
                     representacion: valorRadio('q-representacion'),
                     representacion_otro: valorTexto('q-representacion-otro'),
                     colonia_comunidad: colonia,
+                    colonia_oficial: coloniaSeleccionadaOficial,
                     respuestas: seleccionados,
                     otros: otros,
                     prioridad_ambiental: prioAmb,
@@ -5757,18 +6190,20 @@
                 };
                 if (geomEWKT) payload.geom = geomEWKT;
 
-                const postCuestionario = (cuerpo) => fetch(`${SUPABASE_URL}/rest/v1/participacion_pmduoet`, {
+                const postCuestionario = (cuerpo, representacion) => fetch(`${SUPABASE_URL}/rest/v1/participacion_pmduoet`, {
                     method: 'POST',
                     headers: {
                         'apikey': SUPABASE_KEY,
                         'Authorization': `Bearer ${SUPABASE_KEY}`,
                         'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
+                        'Prefer': representacion ? 'return=representation' : 'return=minimal'
                     },
                     body: JSON.stringify(cuerpo)
                 });
 
-                let respuesta = await postCuestionario(payload);
+                // return=representation devuelve el id del registro, necesario para
+                // colgar de él cada problema georreferenciado.
+                let respuesta = await postCuestionario(payload, true);
 
                 // Si la tabla todavía no tiene las columnas de priorización, no se pierde
                 // la respuesta: se reenvía guardando la jerarquía dentro de "otros", y la
@@ -5783,11 +6218,13 @@
                         delete alterno.prioridad_territorial;
                         delete alterno.total_ambiental;
                         delete alterno.total_territorial;
+                        delete alterno.colonia_oficial;
                         alterno.otros = Object.assign({}, payload.otros, {
                             '_PRIORIDAD_AMBIENTAL': JSON.stringify(prioAmb),
-                            '_PRIORIDAD_TERRITORIAL': JSON.stringify(prioTer)
+                            '_PRIORIDAD_TERRITORIAL': JSON.stringify(prioTer),
+                            '_UBICACIONES': JSON.stringify(ubicacionesProblemas)
                         });
-                        respuesta = await postCuestionario(alterno);
+                        respuesta = await postCuestionario(alterno, true);
                     }
                 }
 
@@ -5796,8 +6233,60 @@
                     throw new Error(`HTTP ${respuesta.status}${detalle ? ' — ' + detalle.slice(0, 200) : ''}`);
                 }
 
-                const modoTaller = document.getElementById('modo-taller');
-                limpiarCuestionario(modoTaller && modoTaller.checked);
+                // Cada problemática se guarda como registro espacial propio: es lo que
+                // convierte las respuestas en una capa temática real, con un punto,
+                // línea o polígono por problema en lugar de uno por cuestionario.
+                let idPadre = null;
+                try {
+                    const creado = await respuesta.json();
+                    idPadre = Array.isArray(creado) && creado[0] ? creado[0].id : null;
+                } catch (e) { /* return=minimal o cuerpo vacío */ }
+
+                const codigos = Object.keys(ubicacionesProblemas);
+                if (idPadre && codigos.length > 0) {
+                    const ordenPrio = {};
+                    prioAmb.forEach(x => { ordenPrio[x.codigo] = x.orden; });
+                    prioTer.forEach(x => { ordenPrio[x.codigo] = x.orden; });
+
+                    const hijos = codigos.map(cod => {
+                        const u = ubicacionesProblemas[cod];
+                        return {
+                            participacion_id: idPadre,
+                            distribuidor: distribuidorCodigo,
+                            colonia_comunidad: colonia,
+                            agenda: agendaDeCodigo(cod) === 'ambiental' ? 'Ambiental' : 'Territorial',
+                            bloque: cod.split('.')[0],
+                            codigo_problema: cod,
+                            texto_problema: textoDeProblema(cod).slice(0, 300),
+                            alcance: u.tipo,
+                            orden_prioridad: ordenPrio[cod] || null,
+                            lat: u.lat,
+                            lng: u.lng,
+                            geom: geojsonGeometryToEWKT(u.geojson)
+                        };
+                    });
+
+                    const rHijos = await fetch(`${SUPABASE_URL}/rest/v1/problemas_pmduoet`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(hijos)
+                    });
+
+                    if (!rHijos.ok) {
+                        // El cuestionario ya quedó guardado; se avisa sin perderlo, para
+                        // que el equipo sepa que faltan las geometrías de este folio.
+                        const det = await rHijos.text().catch(() => '');
+                        console.error('No se guardaron las ubicaciones por problema:', det);
+                        mostrarNotificacion('⚠️ El cuestionario se guardó, pero las ubicaciones no. Avise al equipo del IMPLAN.', 'warning');
+                    }
+                }
+
+                limpiarCuestionario();
                 mostrarNotificacion('✅ Cuestionario enviado. ¡Gracias por participar!', 'success');
 
             } catch (error) {
@@ -5810,13 +6299,15 @@
             }
         }
 
-        // Limpia el formulario. En Modo Taller conserva la ubicación y el cargo para
-        // capturar varias personas de la misma sesión sin repetir todo.
-        function limpiarCuestionario(modoTaller) {
+        // Limpia el formulario por completo para el siguiente participante.
+        function limpiarCuestionario() {
             document.querySelectorAll('.q-check').forEach(c => { c.checked = false; });
             document.querySelectorAll('.q-otro-input').forEach(i => { i.value = ''; });
             prioridades.ambiental = [];
             prioridades.territorial = [];
+            Object.keys(ubicacionesProblemas).forEach(k => delete ubicacionesProblemas[k]);
+            desactivarDibujoProblema();
+            if (capaProblemas) capaProblemas.clearLayers();
             // Los bloques vuelven a colapsarse para que el siguiente participante
             // encuentre el cuestionario en su estado inicial y no en medio del scroll.
             document.querySelectorAll('.q-acc').forEach(caja => {
@@ -5833,8 +6324,10 @@
                 document.querySelectorAll(`input[name="${n}"]`).forEach(r => { r.checked = false; });
             });
 
-            if (!modoTaller) {
+            {
                 const col = document.getElementById('q-colonia'); if (col) col.value = '';
+                coloniaSeleccionadaOficial = null;
+                actualizarEstadoColonia();
                 const repOtro = document.getElementById('q-representacion-otro'); if (repOtro) repOtro.value = '';
                 document.querySelectorAll('input[name="q-representacion"]').forEach(r => { r.checked = false; });
 
@@ -5861,4 +6354,3 @@
     </script>
 </body>
 </html>
-

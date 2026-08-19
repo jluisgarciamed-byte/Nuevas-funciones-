@@ -28,6 +28,8 @@
             --error: #ef4444;
             --info: #3b82f6;
             --idea: #8b5cf6;
+            --accent: #34d399;   /* verde claro de acento: botones y realces */
+            --danger: #ef4444;   /* alias de --error, usado en controles del mapa */
         }
 
         /* ===== ESTILOS GENERALES ===== */
@@ -373,6 +375,133 @@
         .q-contador-wrap.alerta {
             background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4);
         }
+        /* ===== TUTORIAL GUIADO =====
+           Tipografía y botones grandes: el público objetivo tiene poca práctica
+           digital y muchos lo usarán en celular a la intemperie. */
+        .btn-tutorial {
+            display: inline-flex; align-items: center; gap: 0.45rem; flex-shrink: 0;
+            padding: 0.55rem 0.9rem; border-radius: 999px; cursor: pointer;
+            background: var(--accent); color: #06281f; border: none;
+            font-family: inherit; font-size: 0.88rem; font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .btn-tutorial:hover { filter: brightness(1.08); }
+
+        .tutorial { display: none; position: fixed; inset: 0; z-index: 5000; }
+        .tutorial.visible { display: block; }
+        /* Capa oscura para los pasos SIN elemento señalado (bienvenida y cierre).
+           Cuando hay un elemento que iluminar se apaga: de lo contrario tapaba el
+           hueco que abre el foco y nada llegaba a verse resaltado. */
+        .tutorial::before {
+            content: ''; position: fixed; inset: 0; z-index: 0;
+            background: rgba(0,0,0,0.72);
+        }
+        .tutorial.con-foco::before { display: none; }
+
+        /* Realce sobre el elemento real del formulario, no solo el recorte. */
+        .senalado-tutorial {
+            position: relative; z-index: 4999;
+            border-radius: 10px;
+            background: rgba(52,211,153,0.10) !important;
+            box-shadow: inset 0 0 0 2px rgba(52,211,153,0.45);
+        }
+
+        /* El "hueco" se logra con una sombra enorme hacia afuera: oscurece toda la
+           pantalla menos el rectángulo del elemento, que queda a la vista sin
+           recortar el DOM ni clonar nada. */
+        .tutorial-foco {
+            display: none; position: fixed; border-radius: 10px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.74),
+                        0 0 0 3px var(--accent),
+                        0 0 22px 6px rgba(52,211,153,0.55);
+            pointer-events: none; z-index: 1;
+            transition: top 0.3s ease, left 0.3s ease,
+                        width 0.3s ease, height 0.3s ease;
+            animation: foco-latido 2s ease-in-out infinite;
+        }
+        /* Un latido suave para que la vista encuentre el recuadro sin buscarlo. */
+        @keyframes foco-latido {
+            0%, 100% { box-shadow: 0 0 0 9999px rgba(0,0,0,0.74),
+                                   0 0 0 3px var(--accent),
+                                   0 0 22px 6px rgba(52,211,153,0.55); }
+            50%      { box-shadow: 0 0 0 9999px rgba(0,0,0,0.74),
+                                   0 0 0 5px var(--accent),
+                                   0 0 30px 10px rgba(52,211,153,0.8); }
+        }
+        .tutorial-caja {
+            position: fixed; z-index: 2; width: min(380px, calc(100vw - 24px));
+            left: 50%; transform: translateX(-50%);
+            background: var(--primary-dark); border: 2px solid var(--accent);
+            border-radius: 14px; padding: 1.1rem 1.15rem 0.95rem;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+            max-height: 62vh; overflow-y: auto;
+            transition: top 0.25s ease, bottom 0.25s ease;
+        }
+        /* Tres posiciones fijas y seguras. Nunca se calcula una posición flotante
+           junto al elemento: si este quedaba fuera de vista, la tarjeta se perdía. */
+        .tutorial-caja.centrada {
+            top: 50%; transform: translate(-50%, -50%);
+        }
+        .tutorial-caja.anclada-abajo { bottom: 1rem; top: auto; }
+        .tutorial-caja.anclada-arriba { top: 1rem; bottom: auto; }
+        .tutorial-icono {
+            width: 2.6rem; height: 2.6rem; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent); color: #06281f; font-size: 1.15rem;
+            margin-bottom: 0.7rem;
+        }
+        .tutorial-caja h3 {
+            margin: 0 0 0.5rem; font-size: 1.15rem; color: var(--light); line-height: 1.3;
+        }
+        .tutorial-caja p {
+            margin: 0 0 0.9rem; font-size: 0.95rem; color: #d7e2dc;
+            line-height: 1.55; white-space: pre-line;
+        }
+        .tutorial-puntos {
+            display: flex; gap: 0.3rem; justify-content: center; margin-bottom: 0.9rem;
+        }
+        .tutorial-puntos span {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.25); transition: all 0.25s ease;
+        }
+        .tutorial-puntos span.activo { background: var(--accent); width: 20px; border-radius: 999px; }
+        .tutorial-botones {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 0.5rem; margin-top: 0.2rem;
+        }
+        .tutorial-nav { display: flex; gap: 0.45rem; }
+        .tutorial-botones button {
+            padding: 0.7rem 1.25rem; border-radius: 999px; cursor: pointer;
+            font-family: inherit; font-size: 1rem; font-weight: 700; border: none;
+            min-height: 44px;   /* área táctil mínima cómoda en celular */
+        }
+        .tutorial-btn-salir {
+            background: transparent; color: var(--gray); text-decoration: underline;
+            padding-left: 0 !important; font-size: 0.9rem; font-weight: 600;
+        }
+        .tutorial-btn-atras {
+            background: transparent; color: var(--light);
+            border: 2px solid rgba(255,255,255,0.35) !important;
+        }
+        .tutorial-btn-sig {
+            background: var(--accent); color: #06281f;
+            box-shadow: 0 3px 10px rgba(52,211,153,0.35);
+        }
+        .tutorial-botones button:hover { filter: brightness(1.1); }
+        .tutorial-btn-sig::after {
+            content: ' \203A'; font-size: 1.2em; line-height: 0;
+        }
+
+        /* En el paso que explica la ubicación, la fila se enseña aunque no haya
+           nada marcado todavía. */
+        .q-ubi.demo { display: block !important; }
+
+        @media (max-width: 768px) {
+            .btn-tutorial span { display: none; }
+            .btn-tutorial { padding: 0.55rem 0.7rem; }
+            .tutorial-caja { width: calc(100vw - 20px); }
+        }
+
         /* ===== MODAL DE AVISO DE PRIVACIDAD ===== */
         .modal-privacidad {
             display: none; position: fixed; inset: 0; z-index: 4000;
@@ -1743,6 +1872,10 @@
                 <input type="text" id="search-input" placeholder="Buscar localidad o colonia..." class="search-input" aria-label="Buscar localidad o colonia">
                 <div id="search-results" class="search-results"></div>
             </div>
+            <button type="button" id="btn-tutorial" class="btn-tutorial" onclick="iniciarTutorial()">
+                <i class="fas fa-circle-question" aria-hidden="true"></i>
+                <span>¿Cómo se usa?</span>
+            </button>
         </div>
     </header>
 
@@ -4032,17 +4165,9 @@
             }
         }
 
-        function limpiarMapa() {
-            Object.values(capasCargadas).forEach(capa => map.removeLayer(capa));
-            capasCargadas = {};
-            
-            document.querySelectorAll('.layer-item').forEach(item => {
-                item.classList.remove('active');
-                item.querySelector('.layer-toggle').classList.remove('active');
-            });
-            
-            actualizarLeyenda();
-        }
+        // limpiarMapa() se eliminó junto con su botón: desactivaba todas las capas
+        // y desorientaba a los participantes. Si vuelve a hacer falta, debe
+        // reponerse también el control que la invocaba.
 
         function openUsoSueloModal(polygonData, feature) {
             const usoActual = polygonData.clas_bás || polygonData.desc_cve || 'No especificado';
@@ -5734,6 +5859,7 @@
             inicializarAutocompletadoColonia();
             folioSesion = generarFolio();
             alCambiarCuestionario();
+            tutorialPrimeraVez();
         }
 
         function alCambiarCuestionario() {
@@ -5918,6 +6044,374 @@
         function cerrarAvisoPrivacidad() {
             const modal = document.getElementById('modal-privacidad');
             if (modal) modal.classList.remove('visible');
+        }
+
+        // =====================================================================
+        // TUTORIAL GUIADO
+        // ---------------------------------------------------------------------
+        // El público objetivo tiene poca familiaridad digital, así que la ayuda
+        // vive dentro del portal y no en un video aparte: se muestra sola la
+        // primera vez, señala el elemento del que habla y avanza a su ritmo.
+        // Cada paso usa una sola idea y frases cortas.
+        // =====================================================================
+        // El orden de los pasos sigue el orden real del formulario, de arriba abajo.
+        // Enseñarlos salteados obliga a la persona a buscar hacia atrás y rompe la
+        // correspondencia entre lo que oye y lo que ve en pantalla.
+        const PASOS_TUTORIAL = [
+            {
+                titulo: '¡Bienvenido!',
+                texto: 'Este mapa sirve para que usted nos diga qué problemas hay en su ' +
+                       'colonia o comunidad, y en qué lugar exacto están.\n\n' +
+                       'Le voy a explicar cómo usarlo. Vamos de arriba hacia abajo, en el ' +
+                       'mismo orden en que aparecen las preguntas.',
+                icono: 'fa-hand-wave'
+            },
+            {
+                selector: '.q-seccion:nth-of-type(1)',
+                titulo: 'Cuéntenos de usted',
+                texto: 'Arriba de todo se le preguntan unos datos generales: su edad, hasta ' +
+                       'qué año estudió, a qué se dedica.\n\n' +
+                       'Fíjese bien: no se le pide su nombre. Si alguna pregunta no la quiere ' +
+                       'contestar, déjela en blanco.',
+                icono: 'fa-user',
+                abrirPanel: true
+            },
+            {
+                selector: '.q-seccion:nth-of-type(2)',
+                titulo: 'Indique a quién representa',
+                texto: 'Si usted es representante de colonia, delegado o parte de un comité, ' +
+                       'márquelo aquí.\n\n' +
+                       'Si viene por su cuenta, marque la primera opción: ciudadano o ciudadana.',
+                icono: 'fa-users',
+                abrirPanel: true
+            },
+            {
+                selector: '.q-auto-wrap',
+                titulo: 'Indique dónde vive',
+                texto: 'Escriba nada más las primeras letras del nombre de su colonia o ' +
+                       'comunidad y espere a que salga la lista.\n\n' +
+                       'Toque el nombre correcto en la lista. Cuando se ponga verde, quedó bien. ' +
+                       'Tiene que elegirlo de ahí; si nada más lo escribe, no cuenta.',
+                icono: 'fa-location-dot',
+                abrirPanel: true
+            },
+            {
+                selector: '.q-acc[data-bloque="AMBIENTAL-1"]',
+                titulo: 'Abra cada tema',
+                texto: 'Después vienen los problemas, juntados por temas: el agua, la basura, ' +
+                       'las calles, la seguridad.\n\n' +
+                       'Toque el nombre del tema para abrirlo y ver la lista.',
+                icono: 'fa-list',
+                abrirPanel: true,
+                accion: () => abrirBloqueTutorial('AMBIENTAL-1')
+            },
+            {
+                selector: '.q-acc[data-bloque="AMBIENTAL-1"] .q-item:first-child',
+                titulo: 'Marque lo que sí pasa',
+                texto: 'Toque la casilla de cada problema que de verdad ocurre donde usted vive.\n\n' +
+                       'Marque solo lo de su colonia o comunidad.',
+                icono: 'fa-square-check',
+                abrirPanel: true,
+                accion: () => abrirBloqueTutorial('AMBIENTAL-1')
+            },
+            {
+                selector: '.q-acc[data-bloque="AMBIENTAL-1"] .q-item:first-child .q-ubi',
+                titulo: 'Indique en qué lugar',
+                texto: 'Esto es lo más importante. Al marcar un problema aparecen estos ' +
+                       'botones en rojo:\n\n' +
+                       '• Punto: un lugar exacto\n' +
+                       '• Calle o tramo: a lo largo de una calle\n' +
+                       '• Zona: un área completa\n' +
+                       '• Toda mi colonia: si afecta parejo a todos',
+                icono: 'fa-map-pin',
+                abrirPanel: true,
+                accion: () => { abrirBloqueTutorial('AMBIENTAL-1'); mostrarUbiEjemplo(true); },
+                alSalir: () => mostrarUbiEjemplo(false)
+            },
+            {
+                selector: '#map',
+                titulo: 'Toque el mapa',
+                texto: 'Después de elegir el botón, toque en el mapa el lugar donde ocurre ' +
+                       'el problema.\n\n' +
+                       'Puede acercar el mapa con dos dedos para hallar mejor su calle. ' +
+                       'Si se equivoca, toque "Cambiar" y lo hace otra vez.',
+                icono: 'fa-hand-pointer',
+                cerrarPanelMovil: true
+            },
+            {
+                selector: '.q-acc[data-bloque="AMBIENTAL-1"] .q-noaplica',
+                titulo: 'Si no hay problemas, indíquelo',
+                texto: 'Puede que en algún tema no pase nada de lo que dice la lista. Eso ' +
+                       'también nos sirve saberlo.\n\n' +
+                       'Hasta abajo de cada tema marque esta casilla.',
+                icono: 'fa-circle-check',
+                abrirPanel: true,
+                accion: () => abrirBloqueTutorial('AMBIENTAL-1')
+            },
+            {
+                selector: '#report-send',
+                titulo: 'Escoja los más graves y envíe',
+                texto: 'Al terminar cada agenda le va a pedir escoger los 3 problemas más ' +
+                       'graves. El primero que toque es el más grave de todos.\n\n' +
+                       'Al final toque este botón. Le va a salir un número de folio: anótelo.',
+                icono: 'fa-paper-plane',
+                abrirPanel: true
+            },
+            {
+                titulo: 'Eso es todo',
+                texto: 'Si se le olvida algo, toque el botón "¿Cómo se usa?" que está arriba ' +
+                       'y le repito la explicación.',
+                icono: 'fa-flag-checkered'
+            }
+        ];
+
+        // Los pasos con instrucción llevan número; la bienvenida y el cierre no.
+        // Se calcula en vez de escribirse a mano para que nunca se desfase del
+        // contenido real si mañana se agrega o quita un paso.
+        const PASOS_NUMERADOS = PASOS_TUTORIAL.length - 2;
+
+        let pasoTutorial = 0;
+
+        function abrirBloqueTutorial(pre) {
+            const caja = document.querySelector(`.q-acc[data-bloque="${pre}"]`);
+            if (caja && !caja.classList.contains('abierto')) {
+                caja.classList.add('abierto');
+                const h = caja.querySelector('.q-acc-head');
+                if (h) h.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        // Durante el paso 5 se enseña la fila de ubicación aunque no haya nada
+        // marcado: explicarla con el hueco vacío no se entendería.
+        function mostrarUbiEjemplo(activar) {
+            const fila = document.querySelector('.q-acc[data-bloque="AMBIENTAL-1"] .q-item:first-child .q-ubi');
+            if (fila) fila.classList.toggle('demo', !!activar);
+        }
+
+        function iniciarTutorial(desdeCero = true) {
+            if (desdeCero) pasoTutorial = 0;
+            let cont = document.getElementById('tutorial');
+            if (!cont) {
+                cont = document.createElement('div');
+                cont.id = 'tutorial';
+                cont.className = 'tutorial';
+                cont.innerHTML = `
+                    <div class="tutorial-foco" id="tutorial-foco"></div>
+                    <div class="tutorial-caja" id="tutorial-caja" role="dialog" aria-modal="true">
+                        <div class="tutorial-icono"><i id="tutorial-icono"></i></div>
+                        <h3 id="tutorial-titulo"></h3>
+                        <p id="tutorial-texto"></p>
+                        <div class="tutorial-puntos" id="tutorial-puntos"></div>
+                        <div class="tutorial-botones">
+                            <button type="button" class="tutorial-btn-salir" onclick="cerrarTutorial()">
+                                Salir
+                            </button>
+                            <div class="tutorial-nav">
+                                <button type="button" class="tutorial-btn-atras" id="tutorial-atras"
+                                        onclick="pasoAnteriorTutorial()">Atrás</button>
+                                <button type="button" class="tutorial-btn-sig" id="tutorial-siguiente"
+                                        onclick="pasoSiguienteTutorial()">Siguiente</button>
+                            </div>
+                        </div>
+                    </div>`;
+                document.body.appendChild(cont);
+                window.addEventListener('resize', () => {
+                    if (cont.classList.contains('visible')) pintarPasoTutorial();
+                });
+            }
+            cont.classList.add('visible');
+            pintarPasoTutorial();
+        }
+
+        function pintarPasoTutorial() {
+            const paso = PASOS_TUTORIAL[pasoTutorial];
+            if (!paso) { cerrarTutorial(); return; }
+
+            // Preparar el estado que el paso necesita mostrar
+            if (paso.abrirPanel && typeof sidebarState !== 'undefined' && sidebarState === 'closed') {
+                toggleSidebar();
+            }
+            if (paso.cerrarPanelMovil && isMobile && sidebarState !== 'closed') toggleSidebar();
+            if (typeof paso.accion === 'function') { try { paso.accion(); } catch (e) {} }
+
+            document.getElementById('tutorial-icono').className = 'fas ' + (paso.icono || 'fa-circle-info');
+            const esIntermedio = pasoTutorial > 0 && pasoTutorial < PASOS_TUTORIAL.length - 1;
+            document.getElementById('tutorial-titulo').textContent = esIntermedio
+                ? `Paso ${pasoTutorial} de ${PASOS_NUMERADOS}: ${paso.titulo}`
+                : paso.titulo;
+            document.getElementById('tutorial-texto').textContent = paso.texto;
+
+            document.getElementById('tutorial-puntos').innerHTML = PASOS_TUTORIAL
+                .map((_, i) => `<span class="${i === pasoTutorial ? 'activo' : ''}"></span>`).join('');
+
+            const atras = document.getElementById('tutorial-atras');
+            atras.style.visibility = pasoTutorial === 0 ? 'hidden' : 'visible';
+            document.getElementById('tutorial-siguiente').textContent =
+                pasoTutorial === PASOS_TUTORIAL.length - 1 ? 'Terminar' : 'Siguiente';
+
+            colocarFocoTutorial(paso.selector);
+        }
+
+        // Coloca el foco sobre el elemento del paso. La tarjeta NO flota junto al
+        // elemento: se ancla arriba o abajo de la pantalla, del lado contrario a lo
+        // que está señalando. Calcular una posición flotante fallaba cuando el
+        // elemento quedaba fuera de vista o el panel aún se estaba abriendo, y la
+        // tarjeta desaparecía; anclada, siempre está visible pase lo que pase.
+        function limpiarSenalado() {
+            document.querySelectorAll('.senalado-tutorial')
+                .forEach(el => el.classList.remove('senalado-tutorial'));
+        }
+
+        // Rectángulo real del elemento a iluminar.
+        // El <legend> de un fieldset se pinta sobre el borde superior y queda fuera
+        // del rectángulo del propio fieldset: por eso el título del apartado
+        // ("SECCIÓN 1. DATOS GENERALES") aparecía apagado, fuera del recuadro. Se
+        // une su área a la del contenedor para que quede dentro.
+        function rectDeDestino(el) {
+            const r = el.getBoundingClientRect();
+            let top = r.top, left = r.left;
+            let right = (r.right !== undefined) ? r.right : r.left + r.width;
+            let bottom = (r.bottom !== undefined) ? r.bottom : r.top + r.height;
+
+            const hijos = el.children ? Array.from(el.children) : [];
+            hijos.forEach(h => {
+                if (!h.tagName || h.tagName.toLowerCase() !== 'legend') return;
+                const rl = h.getBoundingClientRect();
+                if (!rl || (!rl.width && !rl.height)) return;
+                top = Math.min(top, rl.top);
+                left = Math.min(left, rl.left);
+                right = Math.max(right, rl.right !== undefined ? rl.right : rl.left + rl.width);
+                bottom = Math.max(bottom, rl.bottom !== undefined ? rl.bottom : rl.top + rl.height);
+            });
+            return { top, left, right, bottom, width: right - left, height: bottom - top };
+        }
+
+        function colocarFocoTutorial(selector) {
+            const foco = document.getElementById('tutorial-foco');
+            const caja = document.getElementById('tutorial-caja');
+            if (!foco || !caja) return;
+
+            limpiarSenalado();
+            const destino = selector ? document.querySelector(selector) : null;
+
+            if (!destino || typeof destino.getBoundingClientRect !== 'function') {
+                foco.style.display = 'none';
+                document.getElementById('tutorial').classList.remove('con-foco');
+                caja.className = 'tutorial-caja centrada';
+                return;
+            }
+
+            // Un elemento más alto que la pantalla no se puede centrar: al hacerlo
+            // se corta la parte de arriba, que es justo donde va el número y el
+            // título del apartado. En ese caso se alinea por arriba.
+            const rectPrevio = rectDeDestino(destino);
+            const alineacion = rectPrevio.height > window.innerHeight * 0.6 ? 'start' : 'center';
+
+            try {
+                if (typeof destino.scrollIntoView === 'function') {
+                    destino.scrollIntoView({ behavior: 'smooth', block: alineacion });
+                }
+            } catch (e) {
+                try { destino.scrollIntoView(); } catch (e2) {}
+            }
+
+            clearTimeout(colocarFocoTutorial._t);
+
+            // El desplazamiento es suave y dura un tiempo variable. Medir con un
+            // retardo fijo tomaba la posición a media animación y el recuadro
+            // quedaba desfasado del elemento. En vez de adivinar cuánto tarda, se
+            // mide varias veces hasta que la posición deja de cambiar Y el elemento
+            // ya está a la vista. Exigir solo lo primero daba por perdido un
+            // elemento que aún no había terminado de entrar en pantalla.
+            const estaVisible = (r) => r.width > 0 && r.height > 0 &&
+                                       r.bottom > 0 && r.top < window.innerHeight;
+
+            const esperarEstable = (intento, anterior) => {
+                const r = rectDeDestino(destino);
+                const quieto = anterior &&
+                    Math.abs(r.top - anterior.top) < 1.5 &&
+                    Math.abs(r.left - anterior.left) < 1.5 &&
+                    Math.abs(r.height - anterior.height) < 1.5;
+
+                if ((quieto && estaVisible(r)) || intento >= 12) { aplicarFoco(r); return; }
+                colocarFocoTutorial._t = setTimeout(() => esperarEstable(intento + 1, r), 90);
+            };
+
+            const aplicarFoco = (r) => {
+                const altoPantalla = window.innerHeight;
+                const anchoPantalla = window.innerWidth;
+
+                if (!estaVisible(r)) {
+                    // El elemento no se alcanza a ver: se explica sin señalar, que es
+                    // preferible a dejar la tarjeta perdida fuera de la pantalla.
+                    foco.style.display = 'none';
+                    document.getElementById('tutorial').classList.remove('con-foco');
+                    caja.className = 'tutorial-caja centrada';
+                    return;
+                }
+
+                // El recuadro se recorta a lo que de verdad cabe en pantalla. Sin esto,
+                // un apartado más largo que la ventana dibujaba un marco cuyos bordes
+                // superior e inferior quedaban fuera y parecía un cuadro sin cerrar.
+                const m = 8;
+                const arriba = Math.max(8, r.top - m);
+                const abajo = Math.min(altoPantalla - 8, r.bottom + m);
+                const izq = Math.max(4, r.left - m);
+                const der = Math.min(anchoPantalla - 4, r.right + m);
+
+                foco.style.display = 'block';
+                document.getElementById('tutorial').classList.add('con-foco');
+                destino.classList.add('senalado-tutorial');
+                foco.style.top = arriba + 'px';
+                foco.style.left = izq + 'px';
+                foco.style.width = Math.max(0, der - izq) + 'px';
+                foco.style.height = Math.max(0, abajo - arriba) + 'px';
+
+                // La tarjeta se ancla del lado donde estorbe menos: si lo señalado
+                // ocupa la parte de arriba, va abajo, y al revés.
+                const centroDestino = (arriba + abajo) / 2;
+                caja.className = centroDestino < altoPantalla / 2
+                    ? 'tutorial-caja anclada-abajo'
+                    : 'tutorial-caja anclada-arriba';
+                caja.style.top = '';
+                caja.style.left = '';
+            };
+
+            colocarFocoTutorial._t = setTimeout(() => esperarEstable(0, null), 100);
+        }
+
+        function pasoSiguienteTutorial() {
+            const actual = PASOS_TUTORIAL[pasoTutorial];
+            if (actual && typeof actual.alSalir === 'function') { try { actual.alSalir(); } catch (e) {} }
+            if (pasoTutorial >= PASOS_TUTORIAL.length - 1) { cerrarTutorial(); return; }
+            pasoTutorial++;
+            pintarPasoTutorial();
+        }
+
+        function pasoAnteriorTutorial() {
+            const actual = PASOS_TUTORIAL[pasoTutorial];
+            if (actual && typeof actual.alSalir === 'function') { try { actual.alSalir(); } catch (e) {} }
+            if (pasoTutorial > 0) pasoTutorial--;
+            pintarPasoTutorial();
+        }
+
+        function cerrarTutorial() {
+            const actual = PASOS_TUTORIAL[pasoTutorial];
+            if (actual && typeof actual.alSalir === 'function') { try { actual.alSalir(); } catch (e) {} }
+            mostrarUbiEjemplo(false);
+            limpiarSenalado();
+            const cont = document.getElementById('tutorial');
+            if (cont) { cont.classList.remove('visible'); cont.classList.remove('con-foco'); }
+            try { localStorage.setItem('pmduoet_tutorial_visto', '1'); } catch (e) {}
+        }
+
+        // Se muestra solo la primera vez. Si el navegador bloquea el almacenamiento
+        // —modo privado en algunos equipos—, se muestra siempre, que es preferible
+        // a no mostrarlo nunca en el equipo compartido de un taller.
+        function tutorialPrimeraVez() {
+            let visto = false;
+            try { visto = localStorage.getItem('pmduoet_tutorial_visto') === '1'; } catch (e) {}
+            if (!visto) setTimeout(() => iniciarTutorial(), 900);
         }
 
         // ---------- Bloqueo secuencial de bloques ----------

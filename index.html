@@ -375,6 +375,64 @@
         .q-contador-wrap.alerta {
             background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4);
         }
+        /* ===== GUÍA CONTEXTUAL EN VIVO =====
+           Panel fijo arriba del cuestionario que dice, en cada momento, qué toca
+           hacer. Sustituye al recorrido de bienvenida, que explicaba todo de golpe
+           y se olvidaba antes de llegar a la primera pregunta. */
+        .guia-viva {
+            position: sticky; top: 0; z-index: 20;
+            background: linear-gradient(180deg, #14403C 0%, #0F3B38 100%);
+            border: 2px solid var(--accent); border-radius: 12px;
+            padding: 0.8rem 0.9rem; margin-bottom: 1rem;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+        }
+        .guia-cabecera { display: flex; align-items: flex-start; gap: 0.6rem; }
+        .guia-icono-caja {
+            flex-shrink: 0; width: 2.1rem; height: 2.1rem; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent); color: #06281f; font-size: 0.9rem;
+        }
+        .guia-encabezado { min-width: 0; }
+        .guia-paso {
+            display: block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+            text-transform: uppercase; color: var(--accent); margin-bottom: 0.15rem;
+        }
+        .guia-titulo {
+            display: block; font-size: 0.98rem; color: var(--light); line-height: 1.3;
+        }
+        .guia-texto {
+            margin: 0.55rem 0 0; font-size: 0.85rem; color: #cfe0d8;
+            line-height: 1.5; white-space: pre-line;
+        }
+        .guia-ir {
+            margin-top: 0.6rem; padding: 0.45rem 0.85rem; border-radius: 999px;
+            background: rgba(52,211,153,0.18); color: var(--accent);
+            border: 1px solid rgba(52,211,153,0.5); cursor: pointer;
+            font-family: inherit; font-size: 0.8rem; font-weight: 700;
+        }
+        .guia-ir:hover { background: rgba(52,211,153,0.3); }
+
+        /* ===== BLOQUEO SECUENCIAL DE PREGUNTAS ===== */
+        .q-preg { position: relative; transition: opacity 0.25s ease; }
+        .q-preg.preg-bloqueada { opacity: 0.35; }
+        .q-preg.preg-bloqueada::after {
+            content: '\f023';
+            font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            position: absolute; top: 0.5rem; right: 0.5rem;
+            color: var(--gray); font-size: 0.8rem;
+        }
+        .q-preg.preg-lista::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            position: absolute; top: 0.5rem; right: 0.5rem;
+            color: var(--success); font-size: 0.8rem;
+        }
+        .q-preg.resaltado { animation: q-parpadeo 0.7s ease-in-out 2; }
+
+        /* Bloque esperando que se ubique un problema ya marcado */
+        .q-acc.espera-ubicacion .q-opcion input:disabled + span { opacity: 0.4; }
+        .q-acc.espera-ubicacion .q-otro-input:disabled { opacity: 0.4; }
+
         /* ===== TUTORIAL GUIADO =====
            Tipografía y botones grandes: el público objetivo tiene poca práctica
            digital y muchos lo usarán en celular a la intemperie. */
@@ -1970,6 +2028,20 @@
                             <h3>Cuestionario de Participación</h3>
                         </div>
                         <div class="panel-body">
+                            <div class="guia-viva" id="guia-viva">
+                                <div class="guia-cabecera">
+                                    <span class="guia-icono-caja"><i id="guia-icono" class="fas fa-pen-to-square"></i></span>
+                                    <div class="guia-encabezado">
+                                        <span class="guia-paso" id="guia-paso"></span>
+                                        <strong class="guia-titulo" id="guia-titulo"></strong>
+                                    </div>
+                                </div>
+                                <p class="guia-texto" id="guia-texto"></p>
+                                <button type="button" class="guia-ir" onclick="irAGuia()">
+                                    <i class="fas fa-arrow-down" aria-hidden="true"></i> Llévame ahí
+                                </button>
+                            </div>
+
                             <div class="q-avance">
                                 <div class="q-avance-barra">
                                     <div class="q-avance-fill" id="q-avance-fill"></div>
@@ -3696,11 +3768,19 @@
             let newBasemap;
             switch(basemapId) {
                 case 'satellite':
-                    newBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                        attribution: 'Tiles &copy; Esri',
-                        maxZoom: 22,        // hasta dónde deja acercar el mapa
-                        maxNativeZoom: 19   // hasta dónde existen teselas reales
-                    });
+                    newBasemap = L.layerGroup([
+                        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                            attribution: 'Tiles &copy; Esri',
+                            maxZoom: 22,        // hasta dónde deja acercar el mapa
+                            maxNativeZoom: 19   // hasta dónde existen teselas reales
+                        }),
+                        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+                            maxZoom: 22, maxNativeZoom: 19, opacity: 0.9
+                        }),
+                        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                            maxZoom: 22, maxNativeZoom: 19
+                        })
+                    ]);
                     break;
                 case 'terrain':
                     newBasemap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}', {
@@ -5399,8 +5479,8 @@
             'Comercio, negocio propio o servicios', 'Construcción u oficio',
             'Trabajo del hogar sin pago', 'Empleado del gobierno', 'Estudiante',
             'Jubilado o pensionado', 'Actualmente sin trabajo', 'Otro'];
-        const OPC_LUGAR_TRABAJO = ['En mi propia colonia o comunidad',
-            'En la cabecera de San Francisco del Rincón', 'En Purísima del Rincón',
+        const OPC_LUGAR_TRABAJO = ['En comunidad de San Francisco del Rincón',
+            'En colonia de San Francisco del Rincón', 'En Purísima del Rincón',
             'En León', 'En otro lugar', 'No aplica'];
         const OPC_ADSCRIPCION = ['Sí, indígena', 'Sí, afromexicana', 'No', 'Prefiero no decirlo'];
         const OPC_REPRESENTACION = [
@@ -5672,39 +5752,38 @@
                 proporcione, y se usan únicamente para elaborar el Programa Municipal de Desarrollo
                 Urbano y de Ordenamiento Ecológico Territorial · Visión 2050.
                 <strong>No se le pide su nombre.</strong> Sus respuestas se difunden de forma
-                estadística. Puede dejar en blanco cualquier pregunta.
+                estadística. 
                 <a href="#" onclick="mostrarAvisoPrivacidad(); return false;">Ver aviso completo</a></p>
             </div>
 
             <fieldset class="q-seccion">
                 <legend class="q-seccion-titulo">Sección 1. Datos generales</legend>
                 <p class="q-ayuda">Estos datos sirven para conocer los distintos problemas de las mujeres,
-                los hombres, los jóvenes y los adultos mayores de las localidades urbanas y rurales.
-                Si alguna pregunta no la quiere contestar, puede dejarla en blanco.</p>
+                los hombres, los jóvenes y los adultos mayores de las localidades urbanas y rurales.</p>
 
-                <fieldset class="q-grupo"><legend>1.2 Sexo</legend>
+                <fieldset class="q-grupo q-preg" data-preg="1.1"><legend>1.1 Sexo</legend>
                     ${radioGrupo('q-sexo', OPC_SEXO, 'q-sexo')}
                 </fieldset>
 
-                <div class="form-group">
-                    <label for="q-edad">1.3 Edad cumplida</label>
+                <div class="form-group q-preg" data-preg="1.2">
+                    <label for="q-edad">1.2 Edad cumplida</label>
                     <input type="number" id="q-edad" class="form-input" min="0" max="120" inputmode="numeric" placeholder="Años">
                 </div>
 
-                <fieldset class="q-grupo"><legend>1.4 ¿En dónde nació?</legend>
+                <fieldset class="q-grupo q-preg" data-preg="1.3"><legend>1.3 ¿En dónde nació?</legend>
                     ${radioGrupo('q-nacio', OPC_NACIO, 'q-nacio')}
                 </fieldset>
 
-                <div class="form-group">
-                    <label for="q-anios">1.5 ¿Cuántos años lleva viviendo en la colonia o comunidad que representa?</label>
+                <div class="form-group q-preg" data-preg="1.4">
+                    <label for="q-anios">1.4 ¿Cuántos años lleva viviendo en la colonia o comunidad que representa?</label>
                     <input type="number" id="q-anios" class="form-input" min="0" max="120" inputmode="numeric" placeholder="Años">
                 </div>
 
-                <fieldset class="q-grupo"><legend>1.6 ¿Hasta qué año estudió?</legend>
+                <fieldset class="q-grupo q-preg" data-preg="1.5"><legend>1.5 ¿Hasta qué año estudió?</legend>
                     ${radioGrupo('q-escolaridad', OPC_ESCOLARIDAD, 'q-esc')}
                 </fieldset>
 
-                <fieldset class="q-grupo"><legend>1.7 ¿A qué se dedica principalmente? (marque una)</legend>
+                <fieldset class="q-grupo q-preg" data-preg="1.6"><legend>1.6 ¿A qué se dedica principalmente? (marque una)</legend>
                     ${radioGrupo('q-ocupacion', OPC_OCUPACION, 'q-ocu')}
                     <div class="q-otro">
                         <label for="q-ocupacion-otro">Si marcó "Otro", especifique</label>
@@ -5712,7 +5791,7 @@
                     </div>
                 </fieldset>
 
-                <fieldset class="q-grupo"><legend>1.8 ¿En dónde trabaja o estudia normalmente?</legend>
+                <fieldset class="q-grupo q-preg" data-preg="1.7"><legend>1.7 ¿En dónde trabaja o estudia normalmente?</legend>
                     ${radioGrupo('q-trabajo', OPC_LUGAR_TRABAJO, 'q-tra')}
                     <div class="q-otro">
                         <label for="q-trabajo-otro">Si marcó "En otro lugar", especifique</label>
@@ -5720,14 +5799,14 @@
                     </div>
                 </fieldset>
 
-                <fieldset class="q-grupo"><legend>1.9 ¿Usted se considera persona indígena o afromexicana?</legend>
+                <fieldset class="q-grupo q-preg" data-preg="1.8"><legend>1.8 ¿Usted se considera persona indígena o afromexicana?</legend>
                     ${radioGrupo('q-adscripcion', OPC_ADSCRIPCION, 'q-ads')}
                 </fieldset>
             </fieldset>
 
             <fieldset class="q-seccion">
                 <legend class="q-seccion-titulo">Sección 2. ¿A quién representa?</legend>
-                <fieldset class="q-grupo"><legend>2.1 Marque su cargo o representación (una sola opción)</legend>
+                <fieldset class="q-grupo q-preg" data-preg="2.1"><legend>2.1 Marque su cargo o representación (una sola opción)</legend>
                     ${radioGrupo('q-representacion', OPC_REPRESENTACION, 'q-rep')}
                     <div class="q-otro">
                         <label for="q-representacion-otro">Si marcó "Otro", especifique</label>
@@ -5738,7 +5817,7 @@
 
             <fieldset class="q-seccion">
                 <legend class="q-seccion-titulo">Sección 3. ¿Qué lugar representa?</legend>
-                <div class="form-group q-auto-wrap">
+                <div class="form-group q-auto-wrap q-preg" data-preg="3.1">
                     <label for="q-colonia">3.1 Nombre exacto de su colonia o comunidad <span class="q-req">*</span></label>
                     <p class="q-ayuda" style="margin-bottom:0.5rem;">Escriba las primeras letras y
                     <strong>elija su colonia o comunidad de la lista</strong>. Solo se aceptan
@@ -5818,6 +5897,11 @@
                     // qué falta: revisarlo, o ubicar lo que ya marcó en él.
                     const previos = Array.from(document.querySelectorAll(
                         `.q-acc[data-agenda="${caja.getAttribute('data-agenda')}"]`));
+                    if (!todasLasPreguntasContestadas()) {
+                        mostrarNotificacion('⚠️ Antes de los problemas, conteste las preguntas de arriba', 'warning');
+                        irAGuia();
+                        return;
+                    }
                     const culpable = previos.slice(0, previos.indexOf(caja))
                         .find(c => !bloqueResuelto(c));
                     const motivo = culpable ? motivoBloqueSinResolver(culpable) : 'sin_revisar';
@@ -5853,23 +5937,33 @@
             // input mantiene la lista de priorización sincronizada al teclear.
             cont.addEventListener('input', function (ev) {
                 if (ev.target.classList.contains('q-otro-input')) alCambiarCuestionario();
-                else if (ev.target.id === 'q-colonia') actualizarContadorCuestionario();
+                else if (ev.target.id === 'q-colonia') {
+                    actualizarContadorCuestionario();
+                    actualizarBloqueoPreguntas();
+                    actualizarGuia();
+                }
             });
 
             inicializarAutocompletadoColonia();
             folioSesion = generarFolio();
             alCambiarCuestionario();
-            tutorialPrimeraVez();
+            // El recorrido de bienvenida ya no arranca solo: explicaba todo de golpe
+            // y para cuando la persona llegaba a la pregunta ya lo había olvidado.
+            // Ahora la guía contextual dice qué hacer en cada momento, y el recorrido
+            // queda disponible en el botón "¿Cómo se usa?" para quien lo quiera.
         }
 
         function alCambiarCuestionario() {
             aplicarExclusividadOtroNoAplica();
             actualizarTodasLasFilasUbicacion();
+            actualizarBloqueoDentroDeBloques();
             actualizarBloqueoBloques();
+            actualizarBloqueoPreguntas();
             actualizarContadorCuestionario();
             actualizarBadgesBloques();
             reconstruirPriorizacion('ambiental');
             reconstruirPriorizacion('territorial');
+            actualizarGuia();
         }
 
         // ---------- Avance y badges por bloque ----------
@@ -6071,8 +6165,7 @@
                 titulo: 'Cuéntenos de usted',
                 texto: 'Arriba de todo se le preguntan unos datos generales: su edad, hasta ' +
                        'qué año estudió, a qué se dedica.\n\n' +
-                       'Fíjese bien: no se le pide su nombre. Si alguna pregunta no la quiere ' +
-                       'contestar, déjela en blanco.',
+                       'Fíjese bien: no se le pide su nombre.',
                 icono: 'fa-user',
                 abrirPanel: true
             },
@@ -6405,13 +6498,188 @@
             try { localStorage.setItem('pmduoet_tutorial_visto', '1'); } catch (e) {}
         }
 
-        // Se muestra solo la primera vez. Si el navegador bloquea el almacenamiento
-        // —modo privado en algunos equipos—, se muestra siempre, que es preferible
-        // a no mostrarlo nunca en el equipo compartido de un taller.
-        function tutorialPrimeraVez() {
-            let visto = false;
-            try { visto = localStorage.getItem('pmduoet_tutorial_visto') === '1'; } catch (e) {}
-            if (!visto) setTimeout(() => iniciarTutorial(), 900);
+
+        // ---------- Bloqueo secuencial de preguntas (secciones 1 a 3) ----------
+        // En las pruebas con adultos mayores se saltaban preguntas y llegaban al
+        // final con datos incompletos. Cada pregunta se abre solo cuando la anterior
+        // está contestada, de modo que siempre hay una sola cosa que hacer.
+        function preguntasEnOrden() {
+            return Array.from(document.querySelectorAll('.q-preg'));
+        }
+
+        // Una pregunta cuenta como contestada cuando tiene respuesta utilizable.
+        // Si la opción elegida es "Otro" o "En otro lugar", la casilla no basta:
+        // sin el texto la respuesta no dice nada.
+        function preguntaContestada(el) {
+            if (!el) return false;
+            if (el.getAttribute('data-preg') === '3.1') return coloniaEsValida();
+
+            const radios = el.querySelectorAll('input[type="radio"]');
+            if (radios.length) {
+                const marcado = Array.from(radios).find(r => r.checked);
+                if (!marcado) return false;
+                const etiqueta = marcado.closest('label');
+                const texto = etiqueta ? etiqueta.textContent.trim() : '';
+                if (/^Otro$|^En otro lugar$/i.test(texto)) {
+                    const libre = el.querySelector('.q-otro input');
+                    return !!(libre && libre.value.trim());
+                }
+                return true;
+            }
+
+            const campo = el.querySelector('input[type="number"], input[type="text"]');
+            if (campo) {
+                const v = campo.value.trim();
+                if (!v) return false;
+                if (campo.type === 'number') {
+                    const n = Number(v);
+                    return !isNaN(n) && n >= 0 && n <= 120;
+                }
+                return true;
+            }
+            return true;
+        }
+
+        function actualizarBloqueoPreguntas() {
+            let anterioresListas = true;
+            preguntasEnOrden().forEach(el => {
+                const contestada = preguntaContestada(el);
+                const bloqueada = !anterioresListas;
+                el.classList.toggle('preg-bloqueada', bloqueada);
+                el.classList.toggle('preg-lista', contestada && !bloqueada);
+                // Se desactivan los controles, no solo el aspecto: con pointer-events
+                // el teclado seguiría alcanzándolos.
+                el.querySelectorAll('input, select, textarea, button').forEach(c => {
+                    if (c.classList.contains('q-auto-limpiar')) return;
+                    c.disabled = bloqueada;
+                });
+                if (!contestada) anterioresListas = false;
+            });
+        }
+
+        // Primera pregunta pendiente: es de la que habla la guía.
+        function preguntaPendiente() {
+            return preguntasEnOrden().find(el => !preguntaContestada(el)) || null;
+        }
+
+        // ---------- Guía contextual ----------
+        // Sustituye al tutorial de bienvenida: en vez de explicar todo al principio
+        // y confiar en que se recuerde, dice en cada momento qué toca hacer.
+        const AYUDA_PREGUNTA = {
+            '1.1': ['Seleccione su sexo', 'Toque una de las tres opciones.'],
+            '1.2': ['Escriba su edad', 'Escriba cuántos años cumplidos tiene, solo el número.'],
+            '1.3': ['Indique dónde nació', 'Toque el lugar donde usted nació.'],
+            '1.4': ['Escriba cuántos años lleva viviendo ahí',
+                    'Solo el número de años en su colonia o comunidad. Si lleva menos de un año, escriba 0.'],
+            '1.5': ['Indique hasta qué año estudió', 'Toque el último nivel que terminó.'],
+            '1.6': ['Indique a qué se dedica',
+                    'Toque una sola opción. Si toca "Otro", escriba cuál en el recuadro de abajo.'],
+            '1.7': ['Indique dónde trabaja o estudia',
+                    'Toque una sola opción. Si toca "En otro lugar", escriba dónde en el recuadro de abajo.'],
+            '1.8': ['Conteste si se considera persona indígena o afromexicana',
+                    'Toque una de las opciones. Puede elegir "Prefiero no decirlo".'],
+            '2.1': ['Indique a quién representa',
+                    'Toque una sola opción. Si viene por su cuenta, toque la primera: ciudadano o ciudadana.'],
+            '3.1': ['Escriba su colonia o comunidad y elíjala de la lista',
+                    'Escriba las primeras letras y espere. Cuando salga la lista, toque el nombre correcto. Debe quedar en verde.']
+        };
+
+        function calcularGuia() {
+            // 1) Preguntas de identificación, en orden.
+            const pendiente = preguntaPendiente();
+            if (pendiente) {
+                const clave = pendiente.getAttribute('data-preg');
+                const a = AYUDA_PREGUNTA[clave] || ['Conteste la pregunta señalada', ''];
+                return { icono: 'fa-pen-to-square', paso: 'Pregunta ' + clave,
+                         titulo: a[0], texto: a[1], destino: `.q-preg[data-preg="${clave}"]` };
+            }
+
+            // 2) Agendas: primer bloque sin resolver.
+            for (const agenda of ['ambiental', 'territorial']) {
+                const caja = bloquesSinResolver(agenda)[0];
+                if (!caja) continue;
+                const nombre = (caja.querySelector('.q-acc-head span') || {}).textContent || 'este tema';
+                const sinUbicar = faltantesDeUbicacionEnBloque(caja);
+
+                if (sinUbicar.length > 0) {
+                    const cod = sinUbicar[0];
+                    return {
+                        icono: 'fa-map-pin', paso: 'Ubicar en el mapa',
+                        titulo: 'Ahora indique en qué lugar ocurre',
+                        texto: 'Marcó un problema y falta ubicarlo. Toque uno de los cuatro botones ' +
+                               'rojos y después toque el mapa:\n' +
+                               '• Punto: un lugar exacto\n' +
+                               '• Calle o tramo: a lo largo de una calle\n' +
+                               '• Zona: un área completa\n' +
+                               '• Toda mi colonia: si afecta parejo a todos\n' +
+                               'Hasta que lo ubique no podrá marcar otro problema.',
+                        destino: `.q-item[data-codigo="${cod}"] .q-ubi`
+                    };
+                }
+                return {
+                    icono: 'fa-list-check', paso: 'Tema: ' + nombre.trim(),
+                    titulo: 'Revise la lista completa y marque lo que sí pasa',
+                    texto: 'Lea todas las opciones de este tema. Marque las que ocurren donde ' +
+                           'usted vive; cada una le pedirá su ubicación enseguida.\n' +
+                           'Si no pasa ninguna, marque la casilla del final.',
+                    destino: `.q-acc[data-bloque="${caja.getAttribute('data-bloque')}"]`
+                };
+            }
+
+            // 3) Priorización por agenda.
+            for (const agenda of ['ambiental', 'territorial']) {
+                if (contarPorAgenda(agenda) > 0 && prioridadesDe(agenda).length === 0) {
+                    return {
+                        icono: 'fa-star', paso: 'Los más graves',
+                        titulo: `Escoja los 3 problemas ${agenda === 'ambiental' ? 'ambientales' : 'territoriales'} más graves`,
+                        texto: 'De todo lo que marcó, toque hasta tres. El primero que toque es el ' +
+                               'más grave de todos, y así en ese orden.',
+                        destino: `#prio-${agenda}`
+                    };
+                }
+            }
+
+            // 4) Listo para enviar.
+            return {
+                icono: 'fa-paper-plane', paso: 'Último paso',
+                titulo: 'Ya puede enviar su cuestionario',
+                texto: 'Toque el botón verde de enviar. Le va a salir un número de folio: anótelo.',
+                destino: '#report-send'
+            };
+        }
+
+        function actualizarGuia() {
+            const caja = document.getElementById('guia-viva');
+            if (!caja) return;
+            const g = calcularGuia();
+            guiaDestinoActual = g.destino || null;
+
+            const iPaso = document.getElementById('guia-paso');
+            const iTit = document.getElementById('guia-titulo');
+            const iTxt = document.getElementById('guia-texto');
+            const iIco = document.getElementById('guia-icono');
+            if (iIco) iIco.className = 'fas ' + g.icono;
+            if (iPaso) iPaso.textContent = g.paso;
+            if (iTit) iTit.textContent = g.titulo;
+            if (iTxt) iTxt.textContent = g.texto;
+        }
+
+        let guiaDestinoActual = null;
+
+        // Lleva a la persona al punto exacto del que habla la guía.
+        function irAGuia() {
+            if (!guiaDestinoActual) return;
+            const el = document.querySelector(guiaDestinoActual);
+            if (!el) return;
+            const caja = el.closest('.q-acc');
+            if (caja && !caja.classList.contains('abierto') && !caja.classList.contains('bloqueado')) {
+                caja.classList.add('abierto');
+                const h = caja.querySelector('.q-acc-head');
+                if (h) h.setAttribute('aria-expanded', 'true');
+            }
+            try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            el.classList.add('resaltado');
+            setTimeout(() => el.classList.remove('resaltado'), 2000);
         }
 
         // ---------- Bloqueo secuencial de bloques ----------
@@ -6449,10 +6717,45 @@
             return faltantesDeUbicacionEnBloque(caja).length > 0 ? 'sin_ubicar' : null;
         }
 
+        // Dentro de un bloque, mientras haya un problema marcado sin ubicar se
+        // desactivan las demás casillas. En las pruebas la gente marcaba media lista
+        // de corrido y dejaba las ubicaciones para después —o no las hacía—, así que
+        // ahora es marcar uno, ubicarlo, y recién entonces seguir. Obliga a leer la
+        // lista y a pensar dónde ocurre cada cosa.
+        function actualizarBloqueoDentroDeBloques() {
+            document.querySelectorAll('.q-acc').forEach(caja => {
+                const pendiente = faltantesDeUbicacionEnBloque(caja);
+                const hayPendiente = pendiente.length > 0;
+                caja.classList.toggle('espera-ubicacion', hayPendiente);
+
+                caja.querySelectorAll('.q-check').forEach(c => {
+                    // La casilla del problema pendiente sigue activa para poder
+                    // desmarcarla si se arrepiente.
+                    const esPendiente = pendiente.indexOf(c.value) >= 0;
+                    c.disabled = hayPendiente && !esPendiente;
+                });
+                const otro = caja.querySelector('.q-otro-input');
+                if (otro) {
+                    const esPendiente = pendiente.indexOf(otro.getAttribute('data-codigo')) >= 0;
+                    otro.disabled = hayPendiente && !esPendiente;
+                }
+                const na = caja.querySelector('.q-check-noaplica');
+                if (na) na.disabled = hayPendiente;
+            });
+        }
+
+        function todasLasPreguntasContestadas() {
+            return preguntasEnOrden().every(preguntaContestada);
+        }
+
         function actualizarBloqueoBloques() {
+            // Las agendas no se abren hasta terminar la identificación: si no, se
+            // podía saltar directo a marcar problemas y llegar al envío sin saber
+            // quién los reporta ni desde qué colonia, que es lo que da valor al dato.
+            const identificacionLista = todasLasPreguntasContestadas();
             ['ambiental', 'territorial'].forEach(agenda => {
                 const cajas = Array.from(document.querySelectorAll(`.q-acc[data-agenda="${agenda}"]`));
-                let anterioresListos = true;
+                let anterioresListos = identificacionLista;
                 cajas.forEach((caja, i) => {
                     const resuelto = bloqueResuelto(caja);
                     const bloqueado = !anterioresListos;
@@ -6474,7 +6777,7 @@
                         if (head) head.setAttribute('aria-expanded', 'false');
                     }
                     // El primero siempre abierto de arranque para que se entienda la mecánica.
-                    if (i === 0 && !resuelto && !caja.dataset.autoAbierto) {
+                    if (i === 0 && !resuelto && !bloqueado && !caja.dataset.autoAbierto) {
                         caja.classList.add('abierto');
                         if (head) head.setAttribute('aria-expanded', 'true');
                         caja.dataset.autoAbierto = '1';
@@ -6785,8 +7088,10 @@
             };
             redibujarProblemasEnMapa();
             actualizarFilaUbicacion(codigo);
+            actualizarBloqueoDentroDeBloques();
             actualizarBloqueoBloques();
             actualizarContadorCuestionario();
+            actualizarGuia();
             mostrarToast('Ubicación guardada', 'success');
         }
 
@@ -6826,8 +7131,10 @@
             limpiarTrazosResiduales();
             redibujarProblemasEnMapa();
             actualizarFilaUbicacion(codigo);
+            actualizarBloqueoDentroDeBloques();
             actualizarBloqueoBloques();
             actualizarContadorCuestionario();
+            actualizarGuia();
             mostrarToast('Trazo borrado. Vuelva a ubicar el problema', 'info');
         }
 

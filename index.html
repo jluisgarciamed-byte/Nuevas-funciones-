@@ -390,6 +390,11 @@
             animation: pista-brinca 1.6s ease-in-out infinite;
         }
         .pista-inicio.visible { display: flex; }
+        /* En escritorio el cuestionario está siempre a la vista, así que la pista
+           señalaría un botón que nadie necesita tocar. */
+        @media (min-width: 769px) {
+            .pista-inicio, .pista-inicio.visible { display: none !important; }
+        }
         .pista-flecha { font-size: 1.4rem; line-height: 1; display: block; }
         /* La flecha va arriba si la caja está debajo del botón, y al revés. */
         .pista-inicio.apunta-arriba { flex-direction: column; }
@@ -589,12 +594,7 @@
            La navegación se ancla con position:sticky dentro del área que ya
            tiene scroll, que es lo que funciona en ambos tamaños. */
         #tab-participacion { position: relative; }
-
-        /* Herramientas de técnico: fuera del modo asistido.
-           Dibujar polígonos y escribir coordenadas confunde a quien solo quiere
-           señalar dónde está su problema. */
-        body.en-modo-asistido .q-ubi-btn[data-accion="linea"],
-        body.en-modo-asistido .q-ubi-btn[data-accion="poligono"] { display: none; }
+            /* Vuelven las cuatro formas de ubicar: punto, corredor, zona y colonia. */
         body.en-modo-asistido .leaflet-draw { display: none; }
 
         /* Navegación grande, siempre visible al pie del panel. */
@@ -2335,7 +2335,7 @@
                                         <i class="fas fa-house-flag"></i>
                                     </span>
                                     <div>
-                                        <strong>Toda mi colonia</strong>
+                                        <strong>Toda mi colonia/comunidad</strong>
                                         <span>Solo cuando de verdad afecta parejo a todo el lugar, como que no pase el camión de basura. Si tiene un punto concreto, es mejor marcarlo.</span>
                                     </div>
                                 </div>
@@ -3316,10 +3316,20 @@
                 maxZoom: 22
             }).setView([MUNICIPIO_CENTRO.lat, MUNICIPIO_CENTRO.lng], 13);
             
-            baseLayerActual = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 22, maxNativeZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+            // Arranca en satélite: la gente reconoce su casa y su calle en la foto
+            // aérea mucho antes que en un mapa de líneas, y eso es lo que hace que
+            // ubique bien sus problemas.
+            baseLayerActual = L.layerGroup([
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 22, maxNativeZoom: 19, attribution: 'Tiles &copy; Esri'
+                }),
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 22, maxNativeZoom: 19, opacity: 0.9
+                }),
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 22, maxNativeZoom: 19
+                })
+            ]).addTo(map);
             
             L.control.scale({ imperial: false }).addTo(map);
         }
@@ -4082,8 +4092,8 @@
         // ===== FUNCIONES DE BASEMAPS =====
         function inicializarBasemaps() {
             const basemaps = [
-                { id: 'osm', name: 'OpenStreetMap', icon: 'fas fa-globe-americas', active: true },
-                { id: 'satellite', name: 'Satélite', icon: 'fas fa-satellite' },
+                { id: 'satellite', name: 'Satélite', icon: 'fas fa-satellite', active: true },
+                { id: 'osm', name: 'OpenStreetMap', icon: 'fas fa-globe-americas' },
                 { id: 'terrain', name: 'Relieve', icon: 'fas fa-mountain' },
                 { id: 'dark', name: 'Oscuro', icon: 'fas fa-moon' }
             ];
@@ -6077,7 +6087,7 @@
                         <i class="fas fa-draw-polygon" aria-hidden="true"></i> Zona
                     </button>
                     <button type="button" class="q-ubi-btn q-ubi-btn-alt" data-accion="colonia" data-cod="${codigo}">
-                        <i class="fas fa-house-flag" aria-hidden="true"></i> Toda mi colonia
+                        <i class="fas fa-house-flag" aria-hidden="true"></i> Toda mi colonia/comunidad
                     </button>
                     <button type="button" class="q-ubi-btn q-ubi-btn-borrar" data-accion="borrar" data-cod="${codigo}">
                         <i class="fas fa-rotate-left" aria-hidden="true"></i> Cambiar
@@ -6579,7 +6589,7 @@
                        '• Punto: un lugar exacto\n' +
                        '• Calle o tramo: a lo largo de una calle\n' +
                        '• Zona: un área completa\n' +
-                       '• Toda mi colonia: si afecta parejo a todos',
+                       '• Toda mi colonia/comunidad: si afecta parejo a todos',
                 icono: 'fa-map-pin',
                 abrirPanel: true,
                 accion: () => { abrirBloqueTutorial('AMBIENTAL-1'); mostrarUbiEjemplo(true); },
@@ -7029,7 +7039,7 @@
                                '📌 Punto — si es un lugar exacto (un tiradero, un pozo)\n' +
                                '🛤️ Calle o tramo — si es a lo largo de una calle\n' +
                                '🗺️ Zona — si abarca un área completa\n' +
-                               '🏘️ Toda mi colonia — solo si afecta parejo a todos\n\n' +
+                               '🏘️ Toda mi colonia/comunidad — solo si afecta parejo a todos\n\n' +
                                'Después toque en el mapa el lugar.\n\n' +
                                '⛔ Las demás casillas están bloqueadas hasta que ubique este problema.',
                         destino: `.q-item[data-codigo="${cod}"] .q-ubi`
@@ -7196,11 +7206,12 @@
                                     '1️⃣ Lea la lista y toque el cuadrito de cada problema que ' +
                                     'sí pasa donde usted vive.\n\n' +
                                     '2️⃣ Al marcarlo aparecen dos botones rojos abajo del ' +
-                                    'problema: 📌 Punto y 🏘️ Toda mi colonia.\n\n' +
-                                    '3️⃣ Toque 📌 Punto si el problema está en un lugar exacto ' +
-                                    '(un tiradero, un pozo, una esquina). Enseguida se abre el ' +
-                                    'mapa: toque ahí el lugar.\n\n' +
-                                    '4️⃣ Toque 🏘️ Toda mi colonia solo si afecta parejo a todos, ' +
+                                    'problema: 📌 Punto, 🛤️ Calle o tramo, 🗺️ Zona y 🏘️ Toda mi colonia/comunidad.\n\n' +
+                                    '3️⃣ Elija la forma que corresponda y después toque el mapa:\n' +
+                                    '   📌 Punto — un lugar exacto (un tiradero, un pozo, una esquina)\n' +
+                                    '   🛤️ Calle o tramo — a lo largo de una calle o un canal\n' +
+                                    '   🗺️ Zona — un área completa\n\n' +
+                                    '4️⃣ Toque 🏘️ Toda mi colonia/comunidad solo si afecta parejo a todos, ' +
                                     'como que no pase el camión de la basura.\n\n' +
                                     '⛔ No podrá marcar otro problema hasta ubicar el anterior. ' +
                                     'Es a propósito: así ninguno se queda sin lugar.\n\n' +
@@ -7345,10 +7356,12 @@
                 if (sinUbicar.length > 0) {
                     texto = 'Usted marcó:\n"' + textoDeProblema(sinUbicar[0]).slice(0, 60) + '"\n\n' +
                             'Ahora hay que decir DÓNDE pasa eso.\n\n' +
-                            '1️⃣ Toque uno de los dos botones rojos:\n' +
-                            '   📌 Punto — si es un lugar exacto\n' +
-                            '   🏘️ Toda mi colonia — si afecta parejo a todos\n\n' +
-                            '2️⃣ Si tocó "Punto", ahora toque en el mapa el lugar.\n\n' +
+                            '1️⃣ Toque uno de los botones rojos:\n' +
+                            '   📌 Punto — un lugar exacto\n' +
+                            '   🛤️ Calle o tramo — a lo largo de una calle\n' +
+                            '   🗺️ Zona — un área completa\n' +
+                            '   🏘️ Toda mi colonia/comunidad — si afecta parejo a todos\n\n' +
+                            '2️⃣ Después toque en el mapa el lugar.\n\n' +
                             '⛔ No puede seguir hasta hacer esto.';
                 }
             }
@@ -8024,7 +8037,7 @@
             } catch (e) { return null; }
         }
 
-        // "Toda mi colonia": usa la ubicación de referencia declarada en la Sección 3.
+        // "Toda mi colonia/comunidad": usa la ubicación de referencia declarada en la Sección 3.
         // No se inventa un polígono que nadie dibujó; se marca el alcance como colonia
         // para que en el análisis se distinga de un punto exacto.
         function usarUbicacionColonia(codigo) {
@@ -8614,4 +8627,3 @@
     </script>
 </body>
 </html>
-

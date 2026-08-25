@@ -387,23 +387,27 @@
             margin-bottom: 0.5rem; font-size: 0.92rem;
         }
 
-        /* ===== BARRA DE TRAZO EN CURSO ===== */
+        /* ===== BARRA DE TRAZO EN CURSO =====
+           Va abajo, no arriba: en la parte alta chocaba con el encabezado y con el
+           botón del panel. Botones compactos, del tamaño justo para el pulgar. */
         .barra-trazo {
-            display: none; position: absolute; z-index: 1000;
-            top: 1rem; left: 50%; transform: translateX(-50%);
-            gap: 0.4rem;
+            display: none; position: absolute; z-index: 1001;
+            bottom: 3.2rem; left: 50%; transform: translateX(-50%);
+            gap: 0.35rem; padding: 0.3rem;
+            background: rgba(11,42,39,0.92); border-radius: 999px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
         }
         .barra-trazo.visible { display: flex; }
         .btn-trazo {
-            display: inline-flex; align-items: center; gap: 0.4rem;
-            padding: 0.6rem 0.9rem; border-radius: 999px; cursor: pointer;
-            border: 2px solid #fff; font-family: inherit;
-            font-size: 0.82rem; font-weight: 700; min-height: 44px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
+            border: none; font-family: inherit;
+            font-size: 0.78rem; font-weight: 700; min-height: 40px;
+            background: rgba(255,255,255,0.14); color: var(--light);
         }
-        .btn-trazo-deshacer { background: var(--warning); color: #3d2600; }
-        .btn-trazo-cancelar { background: var(--danger); color: #fff; }
-        .btn-trazo:hover { filter: brightness(1.1); }
+        .btn-trazo-listo { background: var(--success); color: #06281f; }
+        .btn-trazo-cancelar { background: rgba(239,68,68,0.85); color: #fff; padding: 0.5rem 0.7rem; }
+        .btn-trazo:hover { filter: brightness(1.15); }
 
         /* El letrero cambia de color cuando invita a regresar. */
         .pista-inicio.pista-volver { background: var(--info); color: #fff; }
@@ -578,6 +582,9 @@
                 left: auto; right: 0.8rem;
                 width: 48px; height: 48px; font-size: 1rem;
             }
+            /* El encabezado deja libre la esquina donde vive ese botón, para que
+               el nombre del portal no quede debajo. */
+            body.en-modo-asistido .header-content { padding-right: 4rem; }
             /* Al elegir dónde va un problema, el panel se cierra solo y el mapa
                ocupa todo: es el único momento en que el mapa importa. */
             body.en-modo-asistido .sidebar-handle { margin-top: 0.4rem; }
@@ -2247,11 +2254,6 @@
                 <img src="LOGOTIPOGRISIMPLAN.png" alt="Logo IMPLAN" class="logo-implan">
                 <h1>Geoportal Participativo</h1>
             </div>
-            <div class="search-container">
-                <input type="text" id="search-input" placeholder="Buscar localidad o colonia..." class="search-input" aria-label="Buscar localidad o colonia">
-                <div id="search-results" class="search-results"></div>
-            </div>
-
         </div>
     </header>
 
@@ -2475,11 +2477,16 @@
             </div>
             
             <div class="barra-trazo" id="btn-cancelar-trazo">
-                <button type="button" class="btn-trazo btn-trazo-deshacer" onclick="deshacerUltimoPunto()">
-                    <i class="fas fa-rotate-left" aria-hidden="true"></i> Quitar último punto
+                <button type="button" class="btn-trazo btn-trazo-listo" onclick="terminarTrazoEnCurso()">
+                    <i class="fas fa-check" aria-hidden="true"></i> Listo
                 </button>
-                <button type="button" class="btn-trazo btn-trazo-cancelar" onclick="cancelarTrazoEnCurso()">
-                    <i class="fas fa-xmark" aria-hidden="true"></i> Cancelar trazo
+                <button type="button" class="btn-trazo" onclick="deshacerUltimoPunto()"
+                        aria-label="Quitar el último punto">
+                    <i class="fas fa-rotate-left" aria-hidden="true"></i> Quitar punto
+                </button>
+                <button type="button" class="btn-trazo btn-trazo-cancelar" onclick="cancelarTrazoEnCurso()"
+                        aria-label="Cancelar el trazo">
+                    <i class="fas fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
 
@@ -3606,6 +3613,7 @@
 
         function buscarLocalidades(termino) {
             const resultadosContainer = document.getElementById('search-results');
+            if (!resultadosContainer) return;   // el buscador del encabezado se retiró
             resultadosContainer.innerHTML = '';
             
             if (!termino || termino.length < 2) {
@@ -3645,7 +3653,8 @@
                 itemElement.onclick = () => {
                     seleccionarResultadoBusqueda(item);
                     resultadosContainer.style.display = 'none';
-                    document.getElementById('search-input').value = nombre;
+                    const campoBusqueda = document.getElementById('search-input');
+                    if (campoBusqueda) campoBusqueda.value = nombre;
                 };
                 
                 resultadosContainer.appendChild(itemElement);
@@ -5709,13 +5718,17 @@
         function inicializarEventos() {
             // Búsqueda con debounce: filtrar y reconstruir resultados en cada tecla
             // era trabajo redundante; 250 ms se sienten instantáneos.
-            document.getElementById('search-input').addEventListener('input', debounce(function(e) {
+            // El buscador del encabezado se retiró; el listener solo se registra
+            // si el campo existe, para no romper el arranque.
+            const campoBuscar = document.getElementById('search-input');
+            if (campoBuscar) campoBuscar.addEventListener('input', debounce(function(e) {
                 buscarLocalidades(e.target.value);
             }, 250));
 
             document.addEventListener('click', function(e) {
-                if (!e.target.closest('.search-container')) {
-                    document.getElementById('search-results').style.display = 'none';
+                const resultados = document.getElementById('search-results');
+                if (resultados && !e.target.closest('.search-container')) {
+                    resultados.style.display = 'none';
                 }
             });
 
@@ -7577,7 +7590,18 @@
                     : 'Toque aquí para comenzar';
             }
             pista.classList.toggle('pista-volver', pistaYaUsada);
-            if (debeVerse) apuntarPistaAlBoton();
+            if (!debeVerse) return;
+            apuntarPistaAlBoton();
+
+            // "Volver al cuestionario" solo recuerda el camino de regreso: se retira
+            // a los pocos segundos para no tapar el mapa mientras se ubica. El de
+            // arranque sí permanece, porque sin él no se descubre el cuestionario.
+            clearTimeout(actualizarPistaInicio._t);
+            if (pistaYaUsada) {
+                actualizarPistaInicio._t = setTimeout(() => {
+                    pista.classList.remove('visible');
+                }, 4000);
+            }
         }
 
         // La flecha iba centrada en la caja y apuntaba a un punto vacío del mapa.
@@ -8198,36 +8222,59 @@
             actualizarBloqueoBloques();
             actualizarContadorCuestionario();
             actualizarGuia();
-            mostrarToast('Trazo borrado. Vuelva a ubicar el problema', 'info');
+            mostrarToast('Se quitó la ubicación. Vuelva a marcarla', 'info');
         }
 
         // Quita los trazos que L.Draw deja en su capa de edición. Sin esto, borrar la
         // ubicación de un problema dejaba el polígono dibujado sobre el mapa aunque
         // el dato ya no existiera, y el ciudadano creía que seguía registrado.
         function limpiarTrazosResiduales() {
+            // Primero el trazo a medias, que no está en drawnItems sino en las capas
+            // temporales del manejador: sin esto el polígono incompleto se quedaba
+            // dibujado aunque el aviso dijera que se había borrado.
+            abortarTrazoEnCurso();
             if (typeof drawnItems !== 'undefined' && drawnItems) drawnItems.clearLayers();
             if (drawControl) { map.removeControl(drawControl); drawControl = null; }
             currentDrawnGeometry = null;
+        }
+
+        // Deshace y apaga el trazo que esté abierto, si lo hay.
+        function abortarTrazoEnCurso() {
+            if (!manejadorDibujo) return;
+            try {
+                if (typeof manejadorDibujo.deleteLastVertex === 'function') {
+                    for (let i = 0; i < 200; i++) manejadorDibujo.deleteLastVertex();
+                }
+                manejadorDibujo.disable();
+            } catch (e) { /* ya estaba apagado */ }
+            manejadorDibujo = null;
+            actualizarBotonCancelar();
         }
 
         // Cancela un trazo a medias. Antes no hacía nada útil: no guardaba
         // referencia al manejador de dibujo, así que los vértices ya puestos
         // seguían ahí y no había forma de deshacerlos sin terminar la figura.
         function cancelarTrazoEnCurso() {
-            try {
-                if (manejadorDibujo) {
-                    if (typeof manejadorDibujo.deleteLastVertex === 'function') {
-                        // Se vacía la figura vértice por vértice antes de apagarla.
-                        for (let i = 0; i < 200; i++) manejadorDibujo.deleteLastVertex();
-                    }
-                    manejadorDibujo.disable();
-                }
-            } catch (e) { /* el manejador ya estaba apagado */ }
-            manejadorDibujo = null;
             limpiarTrazosResiduales();
             desactivarDibujoProblema();
             actualizarBotonCancelar();
             mostrarToast('Trazo cancelado', 'info');
+        }
+
+        // Cierra la figura sin tener que volver al primer punto. En un polígono de
+        // ocho vértices, recordar cuál fue el primero y acertarle en un celular es
+        // pedir demasiado; con esto basta con pulsar "Listo".
+        function terminarTrazoEnCurso() {
+            if (!manejadorDibujo) return;
+            try {
+                if (typeof manejadorDibujo.completeShape === 'function') {
+                    manejadorDibujo.completeShape();
+                } else if (typeof manejadorDibujo._finishShape === 'function') {
+                    manejadorDibujo._finishShape();
+                }
+            } catch (e) {
+                mostrarNotificacion('⚠️ Faltan puntos para cerrar la figura', 'warning');
+            }
         }
 
         // Quita el último punto puesto, sin cancelar todo el trazo.

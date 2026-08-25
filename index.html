@@ -375,6 +375,39 @@
         .q-contador-wrap.alerta {
             background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4);
         }
+        /* ===== SUBGRUPO CONDICIONAL ===== */
+        .q-condicional {
+            display: none; margin-top: 0.7rem; padding: 0.7rem 0.75rem;
+            border-radius: 10px; background: rgba(52,211,153,0.08);
+            border: 1px solid rgba(52,211,153,0.35);
+        }
+        .q-condicional.visible { display: block; }
+        .q-condicional-titulo {
+            display: block; font-weight: 700; color: var(--accent);
+            margin-bottom: 0.5rem; font-size: 0.92rem;
+        }
+
+        /* ===== BARRA DE TRAZO EN CURSO ===== */
+        .barra-trazo {
+            display: none; position: absolute; z-index: 1000;
+            top: 1rem; left: 50%; transform: translateX(-50%);
+            gap: 0.4rem;
+        }
+        .barra-trazo.visible { display: flex; }
+        .btn-trazo {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.6rem 0.9rem; border-radius: 999px; cursor: pointer;
+            border: 2px solid #fff; font-family: inherit;
+            font-size: 0.82rem; font-weight: 700; min-height: 44px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        }
+        .btn-trazo-deshacer { background: var(--warning); color: #3d2600; }
+        .btn-trazo-cancelar { background: var(--danger); color: #fff; }
+        .btn-trazo:hover { filter: brightness(1.1); }
+
+        /* El letrero cambia de color cuando invita a regresar. */
+        .pista-inicio.pista-volver { background: var(--info); color: #fff; }
+
         /* ===== PISTA DE ARRANQUE =====
            Señala el botón que abre el cuestionario. Sin ella, quien entra ve un
            mapa y no descubre que hay algo que contestar. */
@@ -522,9 +555,10 @@
             /* El panel toma toda la pantalla: el encabezado, el buscador y la
                franja de mapa sumaban 215 px que la pregunta necesitaba. El mapa
                sigue a un toque de distancia con el botón redondo. */
-            /* El encabezado y el buscador no sirven mientras se contesta: el
-               nombre de la colonia tiene su propio campo en el paso 3.1. */
-            body.en-modo-asistido .header { display: none !important; }
+            /* El encabezado se oculta SOLO mientras el cuestionario está abierto:
+               con el panel cerrado la persona ve el mapa y necesita el título para
+               saber en qué sitio está. */
+            body.en-modo-asistido.panel-abierto .header { display: none !important; }
             /* Los botones de acercar y alejar quedaban encima del cuestionario:
                pertenecen al mapa y solo tienen sentido cuando el mapa se ve. */
             body.en-modo-asistido.panel-abierto .leaflet-control-container,
@@ -938,17 +972,6 @@
         .q-noaplica input:checked ~ span { color: var(--success); }
 
         /* ===== BOTÓN CANCELAR TRAZO ===== */
-        .btn-cancelar-trazo {
-            display: none; position: absolute; z-index: 1000;
-            top: 1rem; left: 50%; transform: translateX(-50%);
-            align-items: center; gap: 0.45rem;
-            padding: 0.55rem 1rem; border-radius: 999px; cursor: pointer;
-            background: var(--danger); color: #fff; border: 2px solid #fff;
-            font-family: inherit; font-size: 0.85rem; font-weight: 600;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
-        }
-        .btn-cancelar-trazo.visible { display: inline-flex; }
-        .btn-cancelar-trazo:hover { filter: brightness(1.1); }
 
         /* ===== AUTOCOMPLETADO DE COLONIA ===== */
         .q-auto-wrap { position: relative; }
@@ -2451,10 +2474,14 @@
                 <div id="map-loading-text" style="margin-top: 0.75rem; color: var(--light); font-size: 0.9rem;">Cargando…</div>
             </div>
             
-            <button type="button" id="btn-cancelar-trazo" class="btn-cancelar-trazo"
-                    onclick="cancelarTrazoEnCurso()">
-                <i class="fas fa-xmark" aria-hidden="true"></i> Cancelar trazo
-            </button>
+            <div class="barra-trazo" id="btn-cancelar-trazo">
+                <button type="button" class="btn-trazo btn-trazo-deshacer" onclick="deshacerUltimoPunto()">
+                    <i class="fas fa-rotate-left" aria-hidden="true"></i> Quitar último punto
+                </button>
+                <button type="button" class="btn-trazo btn-trazo-cancelar" onclick="cancelarTrazoEnCurso()">
+                    <i class="fas fa-xmark" aria-hidden="true"></i> Cancelar trazo
+                </button>
+            </div>
 
             <div class="map-controls">
                 <button class="control-btn" title="Zoom al alcance total" aria-label="Zoom al alcance total" onclick="zoomToAll()">
@@ -3350,6 +3377,7 @@
                 // ella y no a la referencia general de la colonia.
                 if (problemaEnUbicacion) {
                     asignarGeometriaAProblema(problemaEnUbicacion, layer.toGeoJSON().geometry);
+                    manejadorDibujo = null;
                     desactivarDibujoProblema();
                     return;
                 }
@@ -3470,19 +3498,48 @@
 
         // Lanza la herramienta de dibujo ya abierta, sin obligar a buscar el botón en
         // la esquina del mapa. En móvil además cierra el panel, que tapa el mapa.
+        let manejadorDibujo = null;   // trazo en curso, para poder cancelarlo o deshacerlo
+
         function abrirDibujoInmediato(tipo) {
             activarHerramientaDibujo(tipo, { conservarTrazos: true });
             try {
-                const handler = tipo === 'linea'
+                manejadorDibujo = tipo === 'linea'
                     ? new L.Draw.Polyline(map, drawControl.options.draw.polyline)
                     : tipo === 'poligono'
                         ? new L.Draw.Polygon(map, drawControl.options.draw.polygon)
                         : null;
-                if (handler) handler.enable();
+                if (manejadorDibujo) manejadorDibujo.enable();
             } catch (err) {
                 console.warn('No se pudo abrir la herramienta de dibujo:', err);
+                manejadorDibujo = null;
             }
             if (isMobile && sidebarState !== 'closed') toggleSidebar();
+        }
+
+        // Al acercar el mapa con dos dedos, cada toque se registraba como un vértice
+        // más y el trazo se llenaba de puntos sueltos. Mientras haya más de un dedo
+        // en la pantalla se suspende el dibujo y se reanuda al soltar.
+        function protegerDibujoDelPellizco() {
+            const lienzo = document.getElementById('map');
+            if (!lienzo) return;
+            let suspendido = false;
+
+            lienzo.addEventListener('touchstart', (ev) => {
+                if (ev.touches.length > 1 && manejadorDibujo && !suspendido) {
+                    try { manejadorDibujo.disable(); suspendido = true; } catch (e) {}
+                }
+            }, { passive: true });
+
+            lienzo.addEventListener('touchend', (ev) => {
+                if (suspendido && ev.touches.length === 0) {
+                    // Se espera un instante: soltar dos dedos no es simultáneo y el
+                    // último contacto se registraría como un punto no deseado.
+                    setTimeout(() => {
+                        try { if (manejadorDibujo) manejadorDibujo.enable(); } catch (e) {}
+                        suspendido = false;
+                    }, 250);
+                }
+            }, { passive: true });
         }
 
         // ===== FUNCIONES DE BÚSQUEDA =====
@@ -5826,6 +5883,10 @@
 
         // ---------- Estructura del cuestionario ----------
         const OPC_SEXO = ['Mujer', 'Hombre', 'Prefiero no decirlo'];
+        const OPC_LGBT = ['Sí', 'No'];
+        const OPC_LGBT_TIPO = ['Mujer Trans', 'Hombre Trans', 'No binario', 'Género fluido',
+            'Gay', 'Lesbiana', 'Persona Bisexual', 'Pansexual', 'Persona Asexual',
+            'Prefiero no decirlo', 'Otro'];
         const OPC_NACIO = ['En San Francisco del Rincón', 'En Purísima del Rincón', 'En León',
             'En otro municipio de Guanajuato', 'En otro estado de la República', 'En otro país'];
         const OPC_ESCOLARIDAD = ['No fui a la escuela', 'Primaria', 'Secundaria',
@@ -6121,6 +6182,21 @@
                     ${radioGrupo('q-sexo', OPC_SEXO, 'q-sexo')}
                 </fieldset>
 
+                <fieldset class="q-grupo q-preg" data-preg="1.1.1">
+                    <legend>1.1.1 ¿Pertenece a algún grupo de identidad LGBTIQ+?</legend>
+                    ${radioGrupo('q-lgbt', OPC_LGBT, 'q-lgbt')}
+                    <!-- Solo aparece si la respuesta es "Sí": preguntar "a cuál" a
+                         quien contestó "No" no tiene sentido y confunde. -->
+                    <div class="q-condicional" id="q-lgbt-cual">
+                        <label class="q-condicional-titulo">¿A cuál?</label>
+                        ${radioGrupo('q-lgbt-tipo', OPC_LGBT_TIPO, 'q-lgbt-tipo')}
+                        <div class="q-otro">
+                            <label for="q-lgbt-otro">Si marcó "Otro", especifique</label>
+                            <input type="text" id="q-lgbt-otro" class="form-input" maxlength="80" placeholder="¿Cuál?">
+                        </div>
+                    </div>
+                </fieldset>
+
                 <div class="form-group q-preg" data-preg="1.2">
                     <label for="q-edad">1.2 Edad cumplida</label>
                     <input type="number" id="q-edad" class="form-input" min="0" max="120" inputmode="numeric" placeholder="Años">
@@ -6318,6 +6394,7 @@
             alCambiarCuestionario();
             renderPasoAsistido();
             document.body.classList.toggle('panel-abierto', sidebarState !== 'closed');
+            protegerDibujoDelPellizco();
             actualizarPistaInicio();
             // Al girar el teléfono el botón cambia de sitio y la flecha debe seguirlo.
             window.addEventListener('resize', actualizarPistaInicio);
@@ -6446,15 +6523,19 @@
                         <strong>Académicos:</strong> nivel de estudios.</p>
 
                         <h4>Datos personales sensibles</h4>
-                        <p><strong>De origen:</strong> información relativa al origen étnico y racial.
-                        Su respuesta es voluntaria y puede dejarla en blanco.</p>
+                        <p><strong>De origen:</strong> información relativa al origen étnico y racial.<br>
+                        <strong>De identidad:</strong> pertenencia a algún grupo de identidad LGBTIQ+
+                        y, en su caso, cuál.</p>
+                        <p>Estas respuestas son voluntarias. Puede elegir "Prefiero no decirlo" y
+                        se difunden únicamente de forma estadística, nunca asociadas a una persona.</p>
 
                         <h4>Finalidad del tratamiento</h4>
                         <p>Cuestionario de participación ciudadana para la Agenda Ambiental y
                         Territorial del PMDUOET 2050.</p>
 
                         <h4>Transferencia de datos</h4>
-                        <p>Los datos se transfieren al Consejo Directivo del IMPLAN, al Consejo
+                        <p>Los datos sensibles se tratan de forma agregada. Los datos se
+                        transfieren al Consejo Directivo del IMPLAN, al Consejo
                         Consultivo del IMPLAN, al Consejo de Planeación para el Desarrollo Municipal
                         y al público en general, con la finalidad de generar estadísticas sobre el
                         perfil de la población participante en el proceso de planeación.</p>
@@ -6886,7 +6967,22 @@
         // sin el texto la respuesta no dice nada.
         function preguntaContestada(el) {
             if (!el) return false;
-            if (el.getAttribute('data-preg') === '3.1') return coloniaEsValida();
+            const clave = el.getAttribute('data-preg');
+            if (clave === '3.1') return coloniaEsValida();
+
+            // 1.1.1 encadena dos respuestas: si contesta "Sí", falta decir a cuál.
+            if (clave === '1.1.1') {
+                const base = valorRadio('q-lgbt');
+                if (!base) return false;
+                if (base !== 'Sí') return true;
+                const tipo = valorRadio('q-lgbt-tipo');
+                if (!tipo) return false;
+                if (tipo === 'Otro') {
+                    const libre = document.getElementById('q-lgbt-otro');
+                    return !!(libre && libre.value.trim());
+                }
+                return true;
+            }
 
             const radios = el.querySelectorAll('input[type="radio"]');
             if (radios.length) {
@@ -6914,7 +7010,23 @@
             return true;
         }
 
+        // Muestra el subgrupo "¿A cuál?" solo cuando la respuesta es afirmativa.
+        function actualizarCondicionalLGBT() {
+            const caja = document.getElementById('q-lgbt-cual');
+            if (!caja) return;
+            const esSi = valorRadio('q-lgbt') === 'Sí';
+            caja.classList.toggle('visible', esSi);
+            if (!esSi) {
+                // Al cambiar a "No" se limpia lo que hubiera respondido antes, para
+                // que no quede un dato contradictorio en la base.
+                document.querySelectorAll('input[name="q-lgbt-tipo"]').forEach(r => { r.checked = false; });
+                const libre = document.getElementById('q-lgbt-otro');
+                if (libre) libre.value = '';
+            }
+        }
+
         function actualizarBloqueoPreguntas() {
+            actualizarCondicionalLGBT();
             let anterioresListas = true;
             preguntasEnOrden().forEach(el => {
                 const contestada = preguntaContestada(el);
@@ -6944,6 +7056,12 @@
                     '👉 Toque el renglón que le corresponde.\n\n' +
                     'Abajo hay tres opciones con un círculo a la izquierda. Al tocar una, ' +
                     'el círculo se pone verde.\n\nSi no lo quiere decir, toque "Prefiero no decirlo".'],
+            '1.1.1': ['¿Pertenece a algún grupo de identidad LGBTIQ+?',
+                    '👉 Toque Sí o No.\n\n' +
+                    'Si toca Sí, abajo aparece otra lista para que diga a cuál. ' +
+                    'Ahí puede elegir "Prefiero no decirlo".\n\n' +
+                    'Esta pregunta sirve para saber si hay problemas que afectan de ' +
+                    'manera distinta a unas personas que a otras.'],
             '1.2': ['¿Cuántos años tiene?',
                     '👉 Toque el recuadro y escriba solo el número.\n\n' +
                     'Por ejemplo: si tiene sesenta y siete años, escriba 67.'],
@@ -7170,6 +7288,7 @@
         // no deja avanzar hasta que esté resuelto.
         // =====================================================================
         let pasoAsistido = 0;
+        let ultimoPasoDibujado = -1;   // para no reiniciar el desplazamiento en cada redibujado
         let pasosCache = [];
 
         // Frase de acompañamiento antes de cada tema. Se genera del título para
@@ -7392,8 +7511,15 @@
                 guiaDestinoActual = '#report-send';
             }
 
-            const panel = document.querySelector('#tab-participacion .tab-content-scrollable');
-            if (panel) panel.scrollTop = 0;
+            // El desplazamiento solo se reinicia al CAMBIAR de paso. Antes se
+            // reiniciaba en cada redibujado, y como cada toque en una casilla
+            // redibuja el paso, la pantalla saltaba sola al principio de la lista:
+            // la persona marcaba una opción de abajo y perdía su lugar.
+            if (ultimoPasoDibujado !== pasoAsistido) {
+                ultimoPasoDibujado = pasoAsistido;
+                const panel = document.querySelector('#tab-participacion .tab-content-scrollable');
+                if (panel) panel.scrollTop = 0;
+            }
         }
 
         function pasoSiguienteAsistido() {
@@ -7438,8 +7564,19 @@
         function actualizarPistaInicio() {
             const pista = document.getElementById('pista-inicio');
             if (!pista) return;
-            const debeVerse = !pistaYaUsada && sidebarState === 'closed';
+            // Con el panel cerrado siempre hay algo que decir: antes de empezar,
+            // cómo entrar; después, cómo volver. Quien está ubicando un problema en
+            // el mapa necesita saber por dónde regresa, sobre todo si no está
+            // familiarizado con el teléfono.
+            const debeVerse = sidebarState === 'closed';
             pista.classList.toggle('visible', debeVerse);
+            const texto = pista.querySelector('.pista-texto');
+            if (texto) {
+                texto.textContent = pistaYaUsada
+                    ? 'Volver al cuestionario'
+                    : 'Toque aquí para comenzar';
+            }
+            pista.classList.toggle('pista-volver', pistaYaUsada);
             if (debeVerse) apuntarPistaAlBoton();
         }
 
@@ -8073,20 +8210,31 @@
             currentDrawnGeometry = null;
         }
 
-        // Cancela un trazo a medias: la persona empezó a dibujar y se arrepintió.
+        // Cancela un trazo a medias. Antes no hacía nada útil: no guardaba
+        // referencia al manejador de dibujo, así que los vértices ya puestos
+        // seguían ahí y no había forma de deshacerlos sin terminar la figura.
         function cancelarTrazoEnCurso() {
             try {
-                if (L.Draw && L.Draw.Polygon) {
-                    // Desactiva cualquier manejador de dibujo abierto.
-                    ['Polygon','Polyline','Marker'].forEach(t => {
-                        if (map._toolbars) return;
-                    });
+                if (manejadorDibujo) {
+                    if (typeof manejadorDibujo.deleteLastVertex === 'function') {
+                        // Se vacía la figura vértice por vértice antes de apagarla.
+                        for (let i = 0; i < 200; i++) manejadorDibujo.deleteLastVertex();
+                    }
+                    manejadorDibujo.disable();
                 }
-            } catch (e) { /* sin manejador activo */ }
+            } catch (e) { /* el manejador ya estaba apagado */ }
+            manejadorDibujo = null;
             limpiarTrazosResiduales();
             desactivarDibujoProblema();
             actualizarBotonCancelar();
             mostrarToast('Trazo cancelado', 'info');
+        }
+
+        // Quita el último punto puesto, sin cancelar todo el trazo.
+        function deshacerUltimoPunto() {
+            if (!manejadorDibujo || typeof manejadorDibujo.deleteLastVertex !== 'function') return;
+            try { manejadorDibujo.deleteLastVertex(); mostrarToast('Se quitó el último punto', 'info'); }
+            catch (e) { /* no había puntos */ }
         }
 
         // Botón flotante visible solo mientras hay un trazo en curso.
@@ -8425,6 +8573,10 @@
                     distribuidor: distribuidorCodigo,
                     folio: folioSesion,
                     sexo: valorRadio('q-sexo'),
+                    lgbtiq: valorRadio('q-lgbt'),
+                    lgbtiq_cual: valorRadio('q-lgbt-tipo') === 'Otro'
+                        ? valorTexto('q-lgbt-otro')
+                        : valorRadio('q-lgbt-tipo'),
                     edad: valorEntero('q-edad'),
                     lugar_nacimiento: valorRadio('q-nacio'),
                     anios_residencia: valorEntero('q-anios'),
@@ -8482,6 +8634,8 @@
                         delete alterno.total_territorial;
                         delete alterno.colonia_oficial;
                         delete alterno.bloques_sin_problemas;
+                        delete alterno.lgbtiq;
+                        delete alterno.lgbtiq_cual;
                         delete alterno.folio;
                         alterno.otros = Object.assign({}, payload.otros, {
                             '_PRIORIDAD_AMBIENTAL': JSON.stringify(prioAmb),
@@ -8589,10 +8743,10 @@
             });
             const alertaUbi = document.getElementById('q-alerta-ubi');
             if (alertaUbi) alertaUbi.classList.remove('visible');
-            ['q-edad', 'q-anios', 'q-ocupacion-otro', 'q-trabajo-otro'].forEach(id => {
+            ['q-edad', 'q-anios', 'q-ocupacion-otro', 'q-trabajo-otro', 'q-lgbt-otro'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
-            ['q-sexo', 'q-nacio', 'q-escolaridad', 'q-ocupacion', 'q-trabajo', 'q-adscripcion'].forEach(n => {
+            ['q-sexo', 'q-lgbt', 'q-lgbt-tipo', 'q-nacio', 'q-escolaridad', 'q-ocupacion', 'q-trabajo', 'q-adscripcion'].forEach(n => {
                 document.querySelectorAll(`input[name="${n}"]`).forEach(r => { r.checked = false; });
             });
 
@@ -8619,6 +8773,7 @@
             alCambiarCuestionario();
             // El scroll real vive en .tab-content-scrollable, no en .sidebar: antes se
             // reiniciaba el contenedor equivocado y el panel se quedaba a media página.
+            ultimoPasoDibujado = -1;   // fuerza el regreso al inicio del cuestionario
             const panel = document.querySelector('#tab-participacion .tab-content-scrollable')
                 || document.querySelector('.sidebar');
             if (panel) panel.scrollTop = 0;

@@ -5776,6 +5776,13 @@
 
             // Mapa
             map.on('click', function(e) {
+                // Mientras hay un trazo abierto, los clics pertenecen a la herramienta
+                // de dibujo y NO deben tratarse como "marcar un punto". Sin esta
+                // salida, el segundo toque de un polígono guardaba un punto suelto y
+                // apagaba el dibujo: por eso los controles desaparecían y una línea
+                // no admitía más de dos vértices.
+                if (manejadorDibujo) return;
+
                 // Un problema esperando ubicación tiene preferencia sobre la referencia
                 // general: es el modo en que se localiza cada problemática por separado.
                 if (problemaEnUbicacion) {
@@ -8131,6 +8138,8 @@
 
         // Entra en modo "esperando ubicación" para un problema concreto.
         function iniciarUbicacionProblema(codigo, tipo) {
+            // Se descarta cualquier trazo a medias antes de empezar otro.
+            abortarTrazoEnCurso();
             problemaEnUbicacion = codigo;
             document.querySelectorAll('.q-ubi').forEach(f => f.classList.remove('esperando'));
             const fila = document.querySelector(`.q-ubi[data-ubi="${codigo}"]`);
@@ -8150,6 +8159,7 @@
         }
 
         function desactivarDibujoProblema() {
+            abortarTrazoEnCurso();
             problemaEnUbicacion = null;
             document.querySelectorAll('.q-ubi').forEach(f => f.classList.remove('esperando'));
             if (drawControl) { map.removeControl(drawControl); drawControl = null; }
@@ -8214,6 +8224,7 @@
                 if (alerta) { alerta.classList.add('visible'); alerta.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
                 return;
             }
+            abortarTrazoEnCurso();
             const geom = currentDrawnGeometry ||
                 { type: 'Point', coordinates: [selectedLocation.lng, selectedLocation.lat] };
             asignarGeometriaAProblema(codigo, JSON.parse(JSON.stringify(geom)), 'colonia');
@@ -8838,4 +8849,5 @@
     </script>
 </body>
 </html>
+
 

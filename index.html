@@ -3512,21 +3512,46 @@
         // la esquina del mapa. En móvil además cierra el panel, que tapa el mapa.
         let manejadorDibujo = null;   // trazo en curso, para poder cancelarlo o deshacerlo
 
+        // Una figura solo se da por terminada cuando la persona pulsa el botón ✓.
+        // El polígono se cierra al tocar su primer vértice, pero la línea termina en
+        // cuanto un toque cae cerca del vértice anterior, y en un celular la
+        // tolerancia del dedo hace que eso ocurra al segundo punto: por eso el
+        // corredor no admitía seguir un río y los controles desaparecían.
+        let finalizacionSolicitada = false;
+
         function abrirDibujoInmediato(tipo) {
             activarHerramientaDibujo(tipo, { conservarTrazos: true });
+            finalizacionSolicitada = false;
             try {
                 manejadorDibujo = tipo === 'linea'
                     ? new L.Draw.Polyline(map, drawControl.options.draw.polyline)
                     : tipo === 'poligono'
                         ? new L.Draw.Polygon(map, drawControl.options.draw.polygon)
                         : null;
-                if (manejadorDibujo) manejadorDibujo.enable();
+                if (manejadorDibujo) {
+                    manejadorDibujo.enable();
+                    blindarCierreDelTrazo(manejadorDibujo);
+                }
             } catch (err) {
                 console.warn('No se pudo abrir la herramienta de dibujo:', err);
                 manejadorDibujo = null;
             }
             actualizarBotonCancelar();
             if (isMobile && sidebarState !== 'closed') toggleSidebar();
+        }
+
+        // Intercepta el cierre automático de la figura. Se conserva el original y
+        // solo se deja pasar cuando el cierre viene del botón, de modo que ningún
+        // toque accidental corte el trazo a la mitad.
+        function blindarCierreDelTrazo(handler) {
+            if (!handler || typeof handler._finishShape !== 'function') return;
+            if (handler._cierreBlindado) return;
+            const original = handler._finishShape.bind(handler);
+            handler._finishShape = function () {
+                if (!finalizacionSolicitada) return;
+                original();
+            };
+            handler._cierreBlindado = true;
         }
 
         // Al acercar el mapa con dos dedos, cada toque se registraba como un vértice
@@ -7355,7 +7380,9 @@
                                     '3️⃣ Elija la forma que corresponda y después toque el mapa:\n' +
                                     '   📌 Punto — un lugar exacto (un tiradero, un pozo, una esquina)\n' +
                                     '   🛤️ Calle o tramo — a lo largo de una calle o un canal\n' +
-                                    '   🗺️ Zona — un área completa\n\n' +
+                                    '   🗺️ Zona — un área completa\n' +
+                                    'En calle y zona se marca punto por punto; al terminar se ' +
+                                    'toca el botón ✓ que sale junto a los de acercar.\n\n' +
                                     '4️⃣ Toque 🏘️ Toda mi colonia/comunidad solo si afecta parejo a todos, ' +
                                     'como que no pase el camión de la basura.\n\n' +
                                     '⛔ No podrá marcar otro problema hasta ubicar el anterior. ' +
@@ -7506,7 +7533,9 @@
                             '   🛤️ Calle o tramo — a lo largo de una calle\n' +
                             '   🗺️ Zona — un área completa\n' +
                             '   🏘️ Toda mi colonia/comunidad — si afecta parejo a todos\n\n' +
-                            '2️⃣ Después toque en el mapa el lugar.\n\n' +
+                            '2️⃣ Después toque en el mapa el lugar.\n' +
+                            '   Si eligió calle o zona, marque punto por punto y al ' +
+                            'terminar toque el botón ✓ que aparece a la izquierda.\n\n' +
                             '⛔ No puede seguir hasta hacer esto.';
                 }
             }
@@ -8152,8 +8181,9 @@
                 if (isMobile && sidebarState !== 'closed') toggleSidebar();
             } else {
                 mostrarToast(tipo === 'linea'
-                    ? 'Trace la calle o el tramo donde ocurre; doble toque para terminar'
-                    : 'Dibuje la zona donde ocurre; doble toque para cerrar', 'info');
+                    ? 'Toque el mapa punto por punto siguiendo la calle. Al terminar, toque el botón ✓'
+                    : 'Toque el mapa marcando las esquinas de la zona. Al terminar, toque el botón ✓',
+                    'info');
                 abrirDibujoInmediato(tipo);
             }
         }
@@ -8265,6 +8295,7 @@
                 manejadorDibujo.disable();
             } catch (e) { /* ya estaba apagado */ }
             manejadorDibujo = null;
+            finalizacionSolicitada = false;
             actualizarBotonCancelar();
         }
 
@@ -8283,6 +8314,13 @@
         // pedir demasiado; con esto basta con pulsar "Listo".
         function terminarTrazoEnCurso() {
             if (!manejadorDibujo) return;
+            const puntos = (manejadorDibujo._markers || []).length;
+            const minimo = manejadorDibujo instanceof L.Draw.Polygon ? 3 : 2;
+            if (puntos < minimo) {
+                mostrarNotificacion(`⚠️ Marque al menos ${minimo} puntos antes de cerrar`, 'warning');
+                return;
+            }
+            finalizacionSolicitada = true;
             try {
                 if (typeof manejadorDibujo.completeShape === 'function') {
                     manejadorDibujo.completeShape();
@@ -8290,8 +8328,9 @@
                     manejadorDibujo._finishShape();
                 }
             } catch (e) {
-                mostrarNotificacion('⚠️ Faltan puntos para cerrar la figura', 'warning');
+                mostrarNotificacion('⚠️ No se pudo cerrar la figura. Intente de nuevo', 'warning');
             }
+            finalizacionSolicitada = false;
         }
 
         // Quita el último punto puesto, sin cancelar todo el trazo.
@@ -8849,5 +8888,4 @@
     </script>
 </body>
 </html>
-
 

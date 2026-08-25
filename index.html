@@ -387,27 +387,30 @@
             margin-bottom: 0.5rem; font-size: 0.92rem;
         }
 
-        /* ===== BARRA DE TRAZO EN CURSO =====
-           Va abajo, no arriba: en la parte alta chocaba con el encabezado y con el
-           botón del panel. Botones compactos, del tamaño justo para el pulgar. */
+        /* ===== CONTROLES DEL TRAZO =====
+           Con el mismo aspecto y tamaño que los de acercar y alejar, y en la misma
+           columna: aparecen debajo del zoom solo mientras se está trazando. Antes
+           eran botones grandes en medio del mapa que tapaban lo que se dibujaba. */
         .barra-trazo {
-            display: none; position: absolute; z-index: 1001;
-            bottom: 3.2rem; left: 50%; transform: translateX(-50%);
-            gap: 0.35rem; padding: 0.3rem;
-            background: rgba(11,42,39,0.92); border-radius: 999px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            display: none; position: absolute; z-index: 1200;
+            top: 7.2rem; left: 0.75rem;
+            flex-direction: column; gap: 0.3rem;
         }
         .barra-trazo.visible { display: flex; }
         .btn-trazo {
-            display: inline-flex; align-items: center; gap: 0.3rem;
-            padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
-            border: none; font-family: inherit;
-            font-size: 0.78rem; font-weight: 700; min-height: 40px;
-            background: rgba(255,255,255,0.14); color: var(--light);
+            width: 42px; height: 42px; padding: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.85);
+            background: rgba(11,42,39,0.92); color: var(--light);
+            font-size: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.45);
         }
         .btn-trazo-listo { background: var(--success); color: #06281f; }
-        .btn-trazo-cancelar { background: rgba(239,68,68,0.85); color: #fff; padding: 0.5rem 0.7rem; }
+        .btn-trazo-cancelar { background: rgba(239,68,68,0.92); color: #fff; }
         .btn-trazo:hover { filter: brightness(1.15); }
+        /* Al marcar un punto no hay figura que cerrar ni vértices que quitar. */
+        .barra-trazo.solo-cancelar .btn-trazo-listo,
+        .barra-trazo.solo-cancelar .btn-trazo-deshacer { display: none; }
 
         /* El letrero cambia de color cuando invita a regresar. */
         .pista-inicio.pista-volver { background: var(--info); color: #fff; }
@@ -578,13 +581,14 @@
                ubicar un problema el panel se cierra y el mapa queda a la vista.
                Ocultarlo con display:none descuadraría el mapa de Leaflet. */
             body.en-modo-asistido .fab {
-                top: 0.8rem; bottom: auto !important;
-                left: auto; right: 0.8rem;
-                width: 48px; height: 48px; font-size: 1rem;
+                top: auto; bottom: 1.2rem !important;
+                left: auto; right: 1rem;
+                width: 56px; height: 56px; font-size: 1.15rem;
             }
-            /* El encabezado deja libre la esquina donde vive ese botón, para que
-               el nombre del portal no quede debajo. */
-            body.en-modo-asistido .header-content { padding-right: 4rem; }
+            body.en-modo-asistido.panel-abierto .fab {
+                top: 0.8rem; bottom: auto !important;
+                right: 0.8rem; width: 48px; height: 48px; font-size: 1rem;
+            }
             /* Al elegir dónde va un problema, el panel se cierra solo y el mapa
                ocupa todo: es el único momento en que el mapa importa. */
             body.en-modo-asistido .sidebar-handle { margin-top: 0.4rem; }
@@ -2477,15 +2481,16 @@
             </div>
             
             <div class="barra-trazo" id="btn-cancelar-trazo">
-                <button type="button" class="btn-trazo btn-trazo-listo" onclick="terminarTrazoEnCurso()">
-                    <i class="fas fa-check" aria-hidden="true"></i> Listo
+                <button type="button" class="btn-trazo btn-trazo-listo" onclick="terminarTrazoEnCurso()"
+                        title="Cerrar la figura aquí" aria-label="Cerrar la figura aquí">
+                    <i class="fas fa-check" aria-hidden="true"></i>
                 </button>
-                <button type="button" class="btn-trazo" onclick="deshacerUltimoPunto()"
-                        aria-label="Quitar el último punto">
-                    <i class="fas fa-rotate-left" aria-hidden="true"></i> Quitar punto
+                <button type="button" class="btn-trazo btn-trazo-deshacer" onclick="deshacerUltimoPunto()"
+                        title="Quitar el último punto" aria-label="Quitar el último punto">
+                    <i class="fas fa-rotate-left" aria-hidden="true"></i>
                 </button>
                 <button type="button" class="btn-trazo btn-trazo-cancelar" onclick="cancelarTrazoEnCurso()"
-                        aria-label="Cancelar el trazo">
+                        title="Cancelar el trazo" aria-label="Cancelar el trazo">
                     <i class="fas fa-xmark" aria-hidden="true"></i>
                 </button>
             </div>
@@ -3520,6 +3525,7 @@
                 console.warn('No se pudo abrir la herramienta de dibujo:', err);
                 manejadorDibujo = null;
             }
+            actualizarBotonCancelar();
             if (isMobile && sidebarState !== 'closed') toggleSidebar();
         }
 
@@ -8287,7 +8293,10 @@
         // Botón flotante visible solo mientras hay un trazo en curso.
         function actualizarBotonCancelar() {
             const btn = document.getElementById('btn-cancelar-trazo');
-            if (btn) btn.classList.toggle('visible', !!problemaEnUbicacion);
+            if (!btn) return;
+            btn.classList.toggle('visible', !!problemaEnUbicacion);
+            // Marcar un punto no tiene figura que cerrar ni vértices que deshacer.
+            btn.classList.toggle('solo-cancelar', !manejadorDibujo);
         }
 
         // Refresca el estado visual de la fila de un problema.
@@ -8829,3 +8838,4 @@
     </script>
 </body>
 </html>
+

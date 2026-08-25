@@ -375,12 +375,320 @@
         .q-contador-wrap.alerta {
             background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4);
         }
+        /* ===== PISTA DE ARRANQUE =====
+           Señala el botón que abre el cuestionario. Sin ella, quien entra ve un
+           mapa y no descubre que hay algo que contestar. */
+        .pista-inicio {
+            display: none; position: fixed; z-index: 1003;
+            top: 4.4rem; right: 0.8rem;
+            flex-direction: column; align-items: flex-start; gap: 0.15rem;
+            padding: 0.55rem 0.85rem; border-radius: 12px;
+            background: var(--accent); color: #06281f;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+            font-weight: 700; font-size: 0.85rem; text-align: center;
+            max-width: 11rem; pointer-events: none;
+            animation: pista-brinca 1.6s ease-in-out infinite;
+        }
+        .pista-inicio.visible { display: flex; }
+        .pista-flecha { font-size: 1.4rem; line-height: 1; display: block; }
+        /* La flecha va arriba si la caja está debajo del botón, y al revés. */
+        .pista-inicio.apunta-arriba { flex-direction: column; }
+        .pista-inicio.apunta-abajo  { flex-direction: column-reverse; }
+        .pista-inicio.apunta-abajo .pista-flecha { transform: rotate(180deg); }
+        .pista-texto { align-self: center; }
+        @keyframes pista-brinca {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-7px); }
+        }
+        /* La posición y el lado de la flecha se calculan en JS a partir de dónde
+           esté el botón, así que no hacen falta reglas por tamaño de pantalla. */
+
+        /* =====================================================================
+           MODO PASO A PASO — DEPURACIÓN DE PANTALLA
+           En un celular quedaban 130 px para la pregunta y una lista de nueve
+           opciones necesita 430. Todo lo que no es "pregunta + respuesta +
+           Siguiente" se retira mientras dura el modo asistido.
+           ===================================================================== */
+
+        /* La guía enseña la acción; el detalle se despliega solo si se pide. */
+        .guia-detalle {
+            display: none; margin: 0.5rem 0 0; font-size: 0.82rem;
+            color: #b9cdc4; line-height: 1.5; white-space: pre-line;
+            padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.12);
+        }
+        .guia-detalle.visible { display: block; }
+        .guia-mas {
+            margin-top: 0.6rem; padding: 0.45rem 0.8rem; border-radius: 999px;
+            background: rgba(255,255,255,0.1); color: var(--light);
+            border: 1px solid rgba(255,255,255,0.25); cursor: pointer;
+            font-family: inherit; font-size: 0.78rem; font-weight: 700;
+        }
+        .guia-mas:hover { background: rgba(255,255,255,0.18); }
+        /* Con una sola cosa en pantalla, "Llévame ahí" no tiene adónde llevar. */
+        body.en-modo-asistido .guia-ir { display: none; }
+
+        /* Las pestañas ocupan el lugar del antiguo interruptor de modo: dan acceso
+           al mapa base y a las capas sin sacar a nadie del cuestionario. */
+        body.en-modo-asistido .sidebar-tabs {
+            display: flex; gap: 0.4rem; padding: 0.5rem 3.6rem 0.5rem 0.5rem;
+            flex-shrink: 0; background: transparent; border: none;
+        }
+        body.en-modo-asistido .tab-button {
+            flex: 1; display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.4rem; padding: 0.6rem 0.5rem; border-radius: 10px; cursor: pointer;
+            background: rgba(0,0,0,0.25); color: var(--gray);
+            border: 1px solid var(--border);
+            font-family: inherit; font-size: 0.82rem; font-weight: 600;
+            min-height: 44px;
+        }
+        body.en-modo-asistido .tab-button.active {
+            background: var(--accent); color: #06281f; border-color: var(--accent);
+        }
+        /* En la pestaña de mapas sí se muestran los encabezados de cada panel. */
+        body.en-modo-asistido #tab-capas .panel-header { display: flex; }
+        body.en-modo-asistido #tab-capas .panel-body { padding: 0.9rem; }
+        body.en-modo-asistido #tab-capas .tab-content-scrollable { padding-bottom: 1rem; }
+
+        /* La leyenda empata en z-index con el panel (1000 los dos) y, al ir después
+           en el documento, ganaba y se dibujaba encima. Se manda atrás: solo hace
+           falta cuando el mapa está a la vista. */
+        body.en-modo-asistido .legend { z-index: 400; }
+
+        /* El contenedor descuenta la altura del encabezado, pero en modo asistido
+           el encabezado está oculto: ese descuento dejaba una franja muerta abajo
+           y empujaba los botones hacia arriba. */
+        body.en-modo-asistido .main-container { height: calc(var(--vh, 1vh) * 100); }
+
+        /* La presentación de la sección la cubre la guía: repetirla robaba dos
+           renglones que hacían falta para ver todas las opciones. */
+        body.en-modo-asistido .q-seccion > .q-ayuda { display: none; }
+
+        /* Estos tres viven FUERA de #cuestionario, así que los selectores anclados
+           a él nunca los alcanzaban y seguían apareciendo en pantalla: la barra de
+           avance, el contador de problemas y el aviso de privacidad completo. */
+        body.en-modo-asistido .q-avance,
+        body.en-modo-asistido .q-contador-wrap,
+        body.en-modo-asistido .q-alerta-ubi,
+        body.en-modo-asistido .q-aviso { display: none; }
+        /* El aviso de privacidad reaparece en el paso de envío, que es cuando
+           corresponde leerlo antes de aceptar. */
+        body.en-modo-asistido.paso-enviar .q-aviso { display: flex; }
+
+        /* La barra de navegación no debe montarse sobre el contenido. */
+        body.en-modo-asistido .sidebar { overflow: hidden !important; }
+        body.en-modo-asistido .tab-content { min-height: 0; }
+        /* Este es el elemento que se desplaza: se deja como bloque con
+           overflow propio. Volverlo columna flexible lo hacía crecer con su
+           contenido y el desplazamiento desaparecía. */
+        body.en-modo-asistido .tab-content-scrollable {
+            display: block;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            min-height: 0;
+        }
+
+        /* 100dvh descuenta la barra del navegador móvil, que aparece y desaparece
+           al desplazarse; el cálculo con --vh queda como respaldo para navegadores
+           que no la soportan. */
+        body.en-modo-asistido .main-container { height: 100dvh; }
+
+        /* La guía, más apretada. */
+        body.en-modo-asistido.paso-intro .guia-viva { max-height: none; }
+        body.en-modo-asistido .guia-viva {
+            position: sticky; top: 0;
+            padding: 0.7rem 0.8rem;
+            /* Tope de altura: con el detalle desplegado la guía crecía hasta tapar
+               la pregunta y los botones. Si no cabe, se desplaza dentro de sí misma. */
+            max-height: 34vh; overflow-y: auto;
+        }
+        body.en-modo-asistido .guia-titulo { font-size: 1.05rem; }
+        body.en-modo-asistido .guia-texto { font-size: 0.92rem; margin-top: 0.45rem; }
+
+        /* La pregunta manda: se le da aire y tipografía cómoda. */
+        body.en-modo-asistido .paso-activo .q-opcion {
+            padding: 0.7rem 0.6rem; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1); margin-bottom: 0.4rem;
+            font-size: 1rem; min-height: 48px; align-items: center;
+        }
+        body.en-modo-asistido .paso-activo .q-opcion:hover { background: rgba(255,255,255,0.06); }
+        body.en-modo-asistido .paso-activo .form-input { font-size: 1.05rem; min-height: 48px; }
+
+        @media (max-width: 768px) {
+            /* El panel toma toda la pantalla: el encabezado, el buscador y la
+               franja de mapa sumaban 215 px que la pregunta necesitaba. El mapa
+               sigue a un toque de distancia con el botón redondo. */
+            /* El encabezado y el buscador no sirven mientras se contesta: el
+               nombre de la colonia tiene su propio campo en el paso 3.1. */
+            body.en-modo-asistido .header { display: none !important; }
+            /* Los botones de acercar y alejar quedaban encima del cuestionario:
+               pertenecen al mapa y solo tienen sentido cuando el mapa se ve. */
+            body.en-modo-asistido.panel-abierto .leaflet-control-container,
+            body.en-modo-asistido.panel-abierto .map-controls,
+            body.en-modo-asistido.panel-abierto .btn-fullscreen,
+            body.en-modo-asistido.panel-abierto .control-btn { display: none; }
+            body.en-modo-asistido .sidebar {
+                height: 100% !important; top: 0 !important; bottom: 0 !important;
+                border-radius: 0 !important; padding: 0.5rem !important;
+                max-height: 100% !important;
+            }
+            /* El mapa NO se oculta: el panel a pantalla completa ya lo tapa, y al
+               ubicar un problema el panel se cierra y el mapa queda a la vista.
+               Ocultarlo con display:none descuadraría el mapa de Leaflet. */
+            body.en-modo-asistido .fab {
+                top: 0.8rem; bottom: auto !important;
+                left: auto; right: 0.8rem;
+                width: 48px; height: 48px; font-size: 1rem;
+            }
+            /* Al elegir dónde va un problema, el panel se cierra solo y el mapa
+               ocupa todo: es el único momento en que el mapa importa. */
+            body.en-modo-asistido .sidebar-handle { margin-top: 0.4rem; }
+        }
+
+        /* =====================================================================
+           MODO PASO A PASO
+           Una sola cosa por pantalla. Todo lo que no corresponde al paso actual
+           se oculta, para que no haya dónde perderse ni qué saltarse.
+           ===================================================================== */
+
+        /* En modo paso a paso desaparece todo lo que no es el paso: los paneles de
+           mapa base y de ayuda geométrica empujaban la pregunta fuera de la
+           pantalla y la persona solo veía "Mapa Base". */
+        body.en-modo-asistido .panel-tecnico { display: none; }
+        body.en-modo-asistido #tab-participacion .panel-header { display: none; }
+        body.en-modo-asistido #tab-participacion .tab-content-scrollable > .panel {
+            border: none; background: transparent; box-shadow: none;
+            margin: 0; padding: 0;
+        }
+        body.en-modo-asistido #tab-participacion .panel-body { padding: 0; }
+
+        /* La guía encabeza el panel y se queda pegada arriba al desplazarse. */
+        body.en-modo-asistido .guia-viva { margin: 0.75rem 0.5rem 1rem; }
+
+        /* En modo paso a paso solo se ve el elemento del paso y su sección. */
+        #cuestionario.modo-asistido .q-seccion { display: none; }
+        #cuestionario.modo-asistido .q-seccion.seccion-activa { display: block; }
+        #cuestionario.modo-asistido .q-preg { display: none; }
+        #cuestionario.modo-asistido .q-preg.paso-activo { display: block; opacity: 1; }
+        #cuestionario.modo-asistido .q-acc { display: none; }
+        #cuestionario.modo-asistido .q-acc.paso-activo { display: block; opacity: 1; }
+        #cuestionario.modo-asistido .q-prio-caja { display: none; }
+        #cuestionario.modo-asistido .q-prio-caja.paso-activo { display: block; }
+        /* Los candados y la cabecera plegable sobran: el paso ya es único. */
+        #cuestionario.modo-asistido .q-preg.paso-activo::after { display: none; }
+        #cuestionario.modo-asistido .paso-activo .q-acc-head { pointer-events: none; }
+        #cuestionario.modo-asistido .paso-activo .q-acc-chevron,
+        #cuestionario.modo-asistido .paso-activo .q-acc-candado { display: none; }
+        #cuestionario.modo-asistido .q-avance,
+        #cuestionario.modo-asistido .q-contador-wrap { display: none; }
+        /* El botón de enviar solo aparece en su propio paso. */
+        body.en-modo-asistido #report-send { display: none; }
+        body.en-modo-asistido.paso-enviar #report-send { display: flex; }
+
+        /* El panel conserva su disposición original: imponerle flex en columna
+           rompía la hoja inferior del móvil y dejaba la pregunta fuera de vista.
+           La navegación se ancla con position:sticky dentro del área que ya
+           tiene scroll, que es lo que funciona en ambos tamaños. */
+        #tab-participacion { position: relative; }
+
+        /* Herramientas de técnico: fuera del modo asistido.
+           Dibujar polígonos y escribir coordenadas confunde a quien solo quiere
+           señalar dónde está su problema. */
+        body.en-modo-asistido .q-ubi-btn[data-accion="linea"],
+        body.en-modo-asistido .q-ubi-btn[data-accion="poligono"] { display: none; }
+        body.en-modo-asistido .leaflet-draw { display: none; }
+
+        /* Navegación grande, siempre visible al pie del panel. */
+        .nav-asistido {
+            display: none; align-items: center; justify-content: space-between;
+            gap: 0.5rem; padding: 0.75rem;
+            position: sticky; bottom: 0; z-index: 25;
+            background: var(--primary-dark);
+            border-top: 2px solid var(--accent);
+            margin: 1rem -0.5rem 0;
+            box-shadow: 0 -6px 18px rgba(0,0,0,0.45);
+        }
+        /* La barra se fija al pie del panel, fuera del área que se desplaza. Así
+           siempre está abajo, sea el paso corto o largo, y el contenido puede
+           desplazarse sin que ella dependa de su altura. */
+        body.en-modo-asistido .nav-asistido {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            margin: 0; z-index: 30;
+        }
+        /* Hueco para que la última opción no quede debajo de la barra. */
+        body.en-modo-asistido .tab-content-scrollable { padding-bottom: 5.5rem; }
+        .nav-btn {
+            display: inline-flex; align-items: center; gap: 0.45rem;
+            padding: 0.85rem 1.25rem; border-radius: 999px; cursor: pointer;
+            border: none; font-family: inherit; font-size: 1rem; font-weight: 700;
+            min-height: 52px;   /* cómodo para dedos poco firmes */
+        }
+        .nav-atras { background: transparent; color: var(--light);
+                     border: 2px solid rgba(255,255,255,0.35); }
+        .nav-siguiente { background: var(--accent); color: #06281f;
+                         box-shadow: 0 3px 10px rgba(52,211,153,0.35); }
+        .nav-siguiente.nav-enviar { background: var(--success); color: #fff; }
+        .nav-contador {
+            font-size: 0.82rem; color: var(--gray); font-weight: 600;
+            text-align: center; flex-shrink: 0;
+        }
+
+        /* La guía parpadea cuando se intenta avanzar sin resolver el paso. */
+        .guia-viva.guia-alerta {
+            border-color: var(--error);
+            animation: guia-aviso 0.6s ease-in-out 3;
+        }
+        @keyframes guia-aviso {
+            0%, 100% { background: linear-gradient(180deg, #14403C 0%, #0F3B38 100%); }
+            50%      { background: linear-gradient(180deg, #5a2220 0%, #3d1715 100%); }
+        }
+        .guia-acciones { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .guia-voz {
+            margin-top: 0.6rem; padding: 0.45rem 0.85rem; border-radius: 999px;
+            background: rgba(59,130,246,0.18); color: #93c5fd;
+            border: 1px solid rgba(59,130,246,0.5); cursor: pointer;
+            font-family: inherit; font-size: 0.8rem; font-weight: 700;
+        }
+        .guia-voz:hover { background: rgba(59,130,246,0.3); }
+        .guia-voz.leyendo { background: var(--info); color: #fff; }
+
+        /* ===== PANTALLA DE CONFIRMACIÓN ===== */
+        .gracias {
+            display: none; position: absolute; inset: 0; z-index: 60;
+            background: var(--primary-dark);
+            flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 1.5rem;
+        }
+        .gracias.visible { display: flex; }
+        .gracias-icono {
+            width: 4.5rem; height: 4.5rem; border-radius: 50%;
+            background: var(--success); color: #06281f;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem; margin-bottom: 1rem;
+        }
+        .gracias h2 { margin: 0 0 0.3rem; font-size: 1.8rem; color: var(--light); }
+        .gracias-sub { margin: 0 0 1.2rem; font-size: 1rem; color: var(--gray); }
+        .gracias-folio {
+            background: rgba(16,185,129,0.12); border: 2px solid rgba(16,185,129,0.45);
+            border-radius: 12px; padding: 0.9rem 1.4rem; margin-bottom: 1rem;
+        }
+        .gracias-folio span { display: block; font-size: 0.8rem; color: var(--gray); }
+        .gracias-folio strong {
+            display: block; font-size: 1.35rem; color: var(--success);
+            letter-spacing: 0.05em; margin-top: 0.25rem;
+        }
+        .gracias-nota {
+            margin: 0 0 1.4rem; font-size: 0.88rem; color: var(--gray);
+            line-height: 1.5; max-width: 20rem;
+        }
+        .gracias-btn { min-height: 52px; font-size: 1rem; }
+
         /* ===== GUÍA CONTEXTUAL EN VIVO =====
            Panel fijo arriba del cuestionario que dice, en cada momento, qué toca
            hacer. Sustituye al recorrido de bienvenida, que explicaba todo de golpe
            y se olvidaba antes de llegar a la primera pregunta. */
         .guia-viva {
-            position: sticky; top: 0; z-index: 20;
+            position: relative; z-index: 20;
+            max-height: 40vh; overflow-y: auto;
             background: linear-gradient(180deg, #14403C 0%, #0F3B38 100%);
             border: 2px solid var(--accent); border-radius: 12px;
             padding: 0.8rem 0.9rem; margin-bottom: 1rem;
@@ -436,14 +744,6 @@
         /* ===== TUTORIAL GUIADO =====
            Tipografía y botones grandes: el público objetivo tiene poca práctica
            digital y muchos lo usarán en celular a la intemperie. */
-        .btn-tutorial {
-            display: inline-flex; align-items: center; gap: 0.45rem; flex-shrink: 0;
-            padding: 0.55rem 0.9rem; border-radius: 999px; cursor: pointer;
-            background: var(--accent); color: #06281f; border: none;
-            font-family: inherit; font-size: 0.88rem; font-weight: 700;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        .btn-tutorial:hover { filter: brightness(1.08); }
 
         .tutorial { display: none; position: fixed; inset: 0; z-index: 5000; }
         .tutorial.visible { display: block; }
@@ -555,8 +855,6 @@
         .q-ubi.demo { display: block !important; }
 
         @media (max-width: 768px) {
-            .btn-tutorial span { display: none; }
-            .btn-tutorial { padding: 0.55rem 0.7rem; }
             .tutorial-caja { width: calc(100vw - 20px); }
         }
 
@@ -1930,10 +2228,7 @@
                 <input type="text" id="search-input" placeholder="Buscar localidad o colonia..." class="search-input" aria-label="Buscar localidad o colonia">
                 <div id="search-results" class="search-results"></div>
             </div>
-            <button type="button" id="btn-tutorial" class="btn-tutorial" onclick="iniciarTutorial()">
-                <i class="fas fa-circle-question" aria-hidden="true"></i>
-                <span>¿Cómo se usa?</span>
-            </button>
+
         </div>
     </header>
 
@@ -1946,31 +2241,58 @@
             <!-- TABS DE NAVEGACIÓN -->
             <div class="sidebar-tabs">
                 <button class="tab-button active" data-tab="participacion">
-                    <i class="fas fa-comment-dots"></i>
-                    <span>Participar</span>
+                    <i class="fas fa-clipboard-question"></i>
+                    <span>Cuestionario</span>
                 </button>
                 <button class="tab-button" data-tab="capas">
-                    <i class="fas fa-layer-group"></i>
-                    <span>Capas</span>
+                    <i class="fas fa-map"></i>
+                    <span>Mapas y capas</span>
                 </button>
             </div>
 
             <!-- TAB: PARTICIPACIÓN -->
             <div class="tab-content active" id="tab-participacion">
-                <div class="tab-content-scrollable">
-                    <!-- Panel de Mapas Base -->
-                    <div class="panel">
-                        <div class="panel-header">
-                            <i class="fas fa-map"></i>
-                            <h3>Mapa Base</h3>
-                        </div>
-                        <div class="panel-body">
-                            <div id="basemaps" class="basemap-grid"></div>
-                        </div>
+                <!-- Pantalla de confirmación tras enviar -->
+                <div class="gracias" id="pantalla-gracias">
+                    <div class="gracias-icono"><i class="fas fa-circle-check"></i></div>
+                    <h2>¡Gracias!</h2>
+                    <p class="gracias-sub">Su participación quedó registrada.</p>
+                    <div class="gracias-folio">
+                        <span>Su folio es</span>
+                        <strong id="gracias-folio-num">—</strong>
                     </div>
+                    <p class="gracias-nota">Anote este número. Con él puede preguntar después
+                    qué pasó con lo que usted reportó.</p>
+                    <button type="button" class="btn btn-primary gracias-btn"
+                            onclick="cerrarGracias()">Contestar otro cuestionario</button>
+                </div>
+
+                <div class="tab-content-scrollable">
+            <div class="guia-viva" id="guia-viva">
+                <div class="guia-cabecera">
+                    <span class="guia-icono-caja"><i id="guia-icono" class="fas fa-pen-to-square"></i></span>
+                    <div class="guia-encabezado">
+                        <span class="guia-paso" id="guia-paso"></span>
+                        <strong class="guia-titulo" id="guia-titulo"></strong>
+                    </div>
+                </div>
+                <p class="guia-texto" id="guia-texto"></p>
+                <p class="guia-detalle" id="guia-detalle"></p>
+                <div class="guia-acciones">
+                    <button type="button" class="guia-mas" id="guia-mas" onclick="alternarDetalleGuia()">
+                        <i class="fas fa-chevron-down" aria-hidden="true"></i> Ver más
+                    </button>
+                    <button type="button" class="guia-voz" id="guia-voz" onclick="leerGuiaEnVoz()">
+                        <i class="fas fa-volume-high" aria-hidden="true"></i> Escuchar
+                    </button>
+                    <button type="button" class="guia-ir" onclick="irAGuia()">
+                        <i class="fas fa-arrow-down" aria-hidden="true"></i> Llévame ahí
+                    </button>
+                </div>
+            </div>
 
                     <!-- Panel didáctico: qué representa cada tipo de geometría -->
-                    <div class="panel">
+                    <div class="panel panel-tecnico">
                         <div class="panel-header">
                             <i class="fas fa-draw-polygon"></i>
                             <h3>Cómo se ubica cada problema</h3>
@@ -2028,19 +2350,7 @@
                             <h3>Cuestionario de Participación</h3>
                         </div>
                         <div class="panel-body">
-                            <div class="guia-viva" id="guia-viva">
-                                <div class="guia-cabecera">
-                                    <span class="guia-icono-caja"><i id="guia-icono" class="fas fa-pen-to-square"></i></span>
-                                    <div class="guia-encabezado">
-                                        <span class="guia-paso" id="guia-paso"></span>
-                                        <strong class="guia-titulo" id="guia-titulo"></strong>
-                                    </div>
-                                </div>
-                                <p class="guia-texto" id="guia-texto"></p>
-                                <button type="button" class="guia-ir" onclick="irAGuia()">
-                                    <i class="fas fa-arrow-down" aria-hidden="true"></i> Llévame ahí
-                                </button>
-                            </div>
+
 
                             <div class="q-avance">
                                 <div class="q-avance-barra">
@@ -2080,6 +2390,20 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- Navegación del modo paso a paso. Va dentro del área con
+                         scroll y se ancla abajo con position:sticky. -->
+                    <div class="nav-asistido" id="nav-asistido">
+                        <button type="button" class="nav-btn nav-atras" id="nav-atras"
+                                onclick="pasoAtrasAsistido()">
+                            <i class="fas fa-arrow-left" aria-hidden="true"></i> Atrás
+                        </button>
+                        <span class="nav-contador" id="nav-contador" aria-live="polite">Paso 1</span>
+                        <button type="button" class="nav-btn nav-siguiente" id="nav-siguiente"
+                                onclick="pasoSiguienteAsistido()">
+                            Siguiente <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2088,6 +2412,17 @@
             <!-- TAB: CAPAS -->
             <div class="tab-content" id="tab-capas">
                 <div class="tab-content-scrollable">
+                    <!-- Panel de Mapas Base -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <i class="fas fa-map"></i>
+                            <h3>Mapa Base</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div id="basemaps" class="basemap-grid"></div>
+                        </div>
+                    </div>
+
                     <div class="panel">
                         <div class="panel-header">
                             <i class="fas fa-layer-group"></i>
@@ -2127,13 +2462,13 @@
                 </button>
             </div>
             
-            <div id="legend" class="legend" style="display: none;">
+            <div id="legend" class="legend collapsed" style="display: none;">
                 <div class="legend-header">
                     <div class="legend-title">
                         <i class="fas fa-layer-group"></i>
                         Leyenda
                     </div>
-                    <button class="legend-toggle" id="legend-toggle" aria-label="Contraer o expandir la leyenda" aria-expanded="true">
+                    <button class="legend-toggle" id="legend-toggle" aria-label="Contraer o expandir la leyenda" aria-expanded="false">
                         <i class="fas fa-chevron-down" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -2145,6 +2480,13 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- Pista de arranque: sin ella, quien abre el portal ve un mapa y no sabe
+         que el cuestionario está detrás del botón redondo. -->
+    <div class="pista-inicio" id="pista-inicio">
+        <span class="pista-flecha" aria-hidden="true">↑</span>
+        <span class="pista-texto">Toque aquí para comenzar</span>
+    </div>
 
     <button class="fab" id="fab" aria-label="Abrir o cerrar el panel de participación" aria-expanded="false">
         <i class="fas fa-bars" aria-hidden="true"></i>
@@ -2927,6 +3269,7 @@
             const overlay = document.getElementById('sidebar-overlay');
             
             if (sidebarState === 'closed') {
+                pistaYaUsada = true;
                 sidebar.classList.add('open');
                 overlay.style.display = 'block';
                 sidebarState = 'open';
@@ -2945,6 +3288,9 @@
                 fab.style.bottom = '';
                 setTimeout(() => { if (map) map.invalidateSize(); }, 300);
             }
+        
+            document.body.classList.toggle('panel-abierto', sidebarState !== 'closed');
+            actualizarPistaInicio();
         }
 
         function toggleLeyenda() {
@@ -5946,11 +6292,28 @@
 
             inicializarAutocompletadoColonia();
             folioSesion = generarFolio();
+            pasoAsistido = 0;
+
+            // Si quedó un cuestionario a medias se recupera; si no, arranca limpio.
+            const habiaProgreso = restaurarProgreso();
+
+            // El recorrido paso a paso es la única forma de contestar: la lista
+            // completa se retiró porque abrumaba y permitía saltarse apartados.
+            document.body.classList.add('en-modo-asistido');
+            const cuest = document.getElementById('cuestionario');
+            if (cuest) cuest.classList.add('modo-asistido');
+            const nav = document.getElementById('nav-asistido');
+            if (nav) nav.style.display = 'flex';
+
             alCambiarCuestionario();
-            // El recorrido de bienvenida ya no arranca solo: explicaba todo de golpe
-            // y para cuando la persona llegaba a la pregunta ya lo había olvidado.
-            // Ahora la guía contextual dice qué hacer en cada momento, y el recorrido
-            // queda disponible en el botón "¿Cómo se usa?" para quien lo quiera.
+            renderPasoAsistido();
+            document.body.classList.toggle('panel-abierto', sidebarState !== 'closed');
+            actualizarPistaInicio();
+            // Al girar el teléfono el botón cambia de sitio y la flecha debe seguirlo.
+            window.addEventListener('resize', actualizarPistaInicio);
+            if (habiaProgreso) {
+                mostrarNotificacion('Se recuperó su cuestionario donde lo dejó', 'info');
+            }
         }
 
         function alCambiarCuestionario() {
@@ -5963,7 +6326,8 @@
             actualizarBadgesBloques();
             reconstruirPriorizacion('ambiental');
             reconstruirPriorizacion('territorial');
-            actualizarGuia();
+            renderPasoAsistido();
+            guardarProgreso();
         }
 
         // ---------- Avance y badges por bloque ----------
@@ -6252,8 +6616,8 @@
             },
             {
                 titulo: 'Eso es todo',
-                texto: 'Si se le olvida algo, toque el botón "¿Cómo se usa?" que está arriba ' +
-                       'y le repito la explicación.',
+                texto: 'Si necesita repetir la explicación, busque el panel de ayuda ' +
+                       'que aparece arriba del cuestionario.',
                 icono: 'fa-flag-checkered'
             }
         ];
@@ -6566,36 +6930,89 @@
         // Sustituye al tutorial de bienvenida: en vez de explicar todo al principio
         // y confiar en que se recuerde, dice en cada momento qué toca hacer.
         const AYUDA_PREGUNTA = {
-            '1.1': ['Seleccione su sexo', 'Toque una de las tres opciones.'],
-            '1.2': ['Escriba su edad', 'Escriba cuántos años cumplidos tiene, solo el número.'],
-            '1.3': ['Indique dónde nació', 'Toque el lugar donde usted nació.'],
-            '1.4': ['Escriba cuántos años lleva viviendo ahí',
-                    'Solo el número de años en su colonia o comunidad. Si lleva menos de un año, escriba 0.'],
-            '1.5': ['Indique hasta qué año estudió', 'Toque el último nivel que terminó.'],
-            '1.6': ['Indique a qué se dedica',
-                    'Toque una sola opción. Si toca "Otro", escriba cuál en el recuadro de abajo.'],
-            '1.7': ['Indique dónde trabaja o estudia',
-                    'Toque una sola opción. Si toca "En otro lugar", escriba dónde en el recuadro de abajo.'],
-            '1.8': ['Conteste si se considera persona indígena o afromexicana',
-                    'Toque una de las opciones. Puede elegir "Prefiero no decirlo".'],
-            '2.1': ['Indique a quién representa',
-                    'Toque una sola opción. Si viene por su cuenta, toque la primera: ciudadano o ciudadana.'],
-            '3.1': ['Escriba su colonia o comunidad y elíjala de la lista',
-                    'Escriba las primeras letras y espere. Cuando salga la lista, toque el nombre correcto. Debe quedar en verde.']
+            '1.1': ['¿Usted es mujer u hombre?',
+                    '👉 Toque el renglón que le corresponde.\n\n' +
+                    'Abajo hay tres opciones con un círculo a la izquierda. Al tocar una, ' +
+                    'el círculo se pone verde.\n\nSi no lo quiere decir, toque "Prefiero no decirlo".'],
+            '1.2': ['¿Cuántos años tiene?',
+                    '👉 Toque el recuadro y escriba solo el número.\n\n' +
+                    'Por ejemplo: si tiene sesenta y siete años, escriba 67.'],
+            '1.3': ['¿En dónde nació usted?',
+                    '👉 Toque el renglón del lugar donde usted nació.\n\n' +
+                    'Si nació en un rancho o comunidad de este municipio, toque la primera opción.'],
+            '1.4': ['¿Cuántos años lleva viviendo en su colonia o comunidad?',
+                    '👉 Toque el recuadro y escriba solo el número de años.\n\n' +
+                    'Si toda su vida ha vivido ahí, escriba su edad. Si llegó hace poco, escriba 0.'],
+            '1.5': ['¿Hasta qué año estudió?',
+                    '👉 Toque el último nivel que usted terminó.\n\n' +
+                    'Si no fue a la escuela, toque la primera opción. No pasa nada.'],
+            '1.6': ['¿A qué se dedica usted?',
+                    '👉 Toque solo uno, el principal.\n\n' +
+                    'Si su trabajo no está en la lista, toque "Otro" y escriba cuál en el ' +
+                    'recuadro que aparece abajo.'],
+            '1.7': ['¿En dónde trabaja o estudia?',
+                    '👉 Toque a dónde va usted la mayoría de los días.\n\n' +
+                    'Si ya no trabaja ni estudia, toque "No aplica".'],
+            '1.8': ['¿Se considera persona indígena o afromexicana?',
+                    '👉 Toque la opción que corresponde.\n\n' +
+                    'Si prefiere no contestar, toque "Prefiero no decirlo".'],
+            '2.1': ['¿Usted representa a alguien?',
+                    '👉 Si viene por su cuenta, toque la primera opción: "Ciudadano o ciudadana".\n\n' +
+                    'Si es representante de colonia, delegado o parte de un comité, toque su cargo.'],
+            '3.1': ['¿Cómo se llama su colonia o comunidad?',
+                    '👉 Toque el recuadro, escriba las primeras letras y toque su colonia en la lista que aparece.\n\n' +
+                    '1️⃣ Escriba las primeras letras del nombre.\n' +
+                    '2️⃣ Espere un momento: aparece una lista.\n' +
+                    '3️⃣ Toque el nombre correcto en esa lista.\n\n' +
+                    '✅ Cuando el recuadro se ponga verde, quedó bien. Si nada más lo escribe, no cuenta.']
         };
 
         function calcularGuia() {
+            // La guía siempre dice tres cosas: QUÉ hacer, CÓMO hacerlo, y POR QUÉ
+            // no puede avanzar si algo está bloqueado. Cada mensaje es una sola
+            // instrucción con un solo verbo, para que un adulto mayor que lee despacio
+            // sepa exactamente qué tocar en la pantalla.
+
             // 1) Preguntas de identificación, en orden.
             const pendiente = preguntaPendiente();
             if (pendiente) {
                 const clave = pendiente.getAttribute('data-preg');
                 const a = AYUDA_PREGUNTA[clave] || ['Conteste la pregunta señalada', ''];
-                return { icono: 'fa-pen-to-square', paso: 'Pregunta ' + clave,
-                         titulo: a[0], texto: a[1], destino: `.q-preg[data-preg="${clave}"]` };
+                const anterior = preguntasEnOrden()[Math.max(0, preguntasEnOrden().indexOf(pendiente) - 1)];
+                const porQue = anterior && !preguntaContestada(anterior)
+                    ? '\n\n⛔ No puede avanzar porque falta contestar la pregunta anterior.'
+                    : '';
+                return { icono: 'fa-hand-pointer', paso: '👉 Pregunta ' + clave,
+                         titulo: a[0],
+                         texto: a[1] + porQue,
+                         destino: `.q-preg[data-preg="${clave}"]` };
             }
 
-            // 2) Agendas: primer bloque sin resolver.
+            // 2) Priorización ambiental (si ya se marcaron problemas y no se eligieron los graves).
+            if (contarPorAgenda('ambiental') > 0 && prioridadesDe('ambiental').length === 0 &&
+                bloquesSinResolver('ambiental').length === 0) {
+                return {
+                    icono: 'fa-star', paso: '⭐ Los más graves',
+                    titulo: 'Escoja los 3 problemas ambientales más graves',
+                    texto: 'De todo lo que marcó en la agenda ambiental, toque hasta tres.\n\n' +
+                           'El primero que toque es el más grave de todos.\n' +
+                           'El segundo es el que le sigue.\n' +
+                           'El tercero cierra la lista.\n\n' +
+                           '⛔ Hasta que los elija no podrá pasar a la agenda territorial.',
+                    destino: '#prio-ambiental'
+                };
+            }
+
+            // 3) Agendas: primer bloque sin resolver.
             for (const agenda of ['ambiental', 'territorial']) {
+                // Si la ambiental no está completa, no habla de la territorial.
+                if (agenda === 'territorial') {
+                    const ambLista = Array.from(document.querySelectorAll('.q-acc[data-agenda="ambiental"]'))
+                        .every(bloqueResuelto);
+                    const ambPrio = contarPorAgenda('ambiental') === 0 || prioridadesDe('ambiental').length > 0;
+                    if (!ambLista || !ambPrio) continue;
+                }
+
                 const caja = bloquesSinResolver(agenda)[0];
                 if (!caja) continue;
                 const nombre = (caja.querySelector('.q-acc-head span') || {}).textContent || 'este tema';
@@ -6603,47 +7020,65 @@
 
                 if (sinUbicar.length > 0) {
                     const cod = sinUbicar[0];
+                    const txtProb = textoDeProblema(cod);
                     return {
-                        icono: 'fa-map-pin', paso: 'Ubicar en el mapa',
-                        titulo: 'Ahora indique en qué lugar ocurre',
-                        texto: 'Marcó un problema y falta ubicarlo. Toque uno de los cuatro botones ' +
-                               'rojos y después toque el mapa:\n' +
-                               '• Punto: un lugar exacto\n' +
-                               '• Calle o tramo: a lo largo de una calle\n' +
-                               '• Zona: un área completa\n' +
-                               '• Toda mi colonia: si afecta parejo a todos\n' +
-                               'Hasta que lo ubique no podrá marcar otro problema.',
+                        icono: 'fa-map-pin', paso: '📍 Ubicar en el mapa',
+                        titulo: '¿Dónde ocurre "' + txtProb.slice(0, 50) + '"?',
+                        texto: 'Marcó este problema y ahora toca decir dónde pasa. ' +
+                               'Toque uno de estos botones rojos:\n\n' +
+                               '📌 Punto — si es un lugar exacto (un tiradero, un pozo)\n' +
+                               '🛤️ Calle o tramo — si es a lo largo de una calle\n' +
+                               '🗺️ Zona — si abarca un área completa\n' +
+                               '🏘️ Toda mi colonia — solo si afecta parejo a todos\n\n' +
+                               'Después toque en el mapa el lugar.\n\n' +
+                               '⛔ Las demás casillas están bloqueadas hasta que ubique este problema.',
                         destino: `.q-item[data-codigo="${cod}"] .q-ubi`
                     };
                 }
+
+                const esBloqueado = caja.classList.contains('bloqueado');
+                if (esBloqueado) {
+                    return {
+                        icono: 'fa-lock', paso: '🔒 Tema bloqueado',
+                        titulo: 'No puede abrir "' + nombre.trim() + '" todavía',
+                        texto: agenda === 'territorial'
+                            ? '⛔ Primero tiene que terminar todos los temas de la agenda ambiental y elegir los 3 más graves.'
+                            : '⛔ Primero tiene que terminar el tema anterior: marque los problemas que apliquen y ubíquelos, o marque que ninguno aplica.',
+                        destino: `.q-acc[data-bloque="${caja.getAttribute('data-bloque')}"]`
+                    };
+                }
+
                 return {
-                    icono: 'fa-list-check', paso: 'Tema: ' + nombre.trim(),
-                    titulo: 'Revise la lista completa y marque lo que sí pasa',
-                    texto: 'Lea todas las opciones de este tema. Marque las que ocurren donde ' +
-                           'usted vive; cada una le pedirá su ubicación enseguida.\n' +
-                           'Si no pasa ninguna, marque la casilla del final.',
+                    icono: 'fa-list-check', paso: '📋 ' + nombre.trim(),
+                    titulo: 'Revise esta lista y marque lo que sí pasa',
+                    texto: 'Lea las opciones una por una.\n\n' +
+                           '✅ Si alguna pasa donde usted vive, toque la casilla. ' +
+                           'Enseguida le pedirá que la ubique en el mapa.\n\n' +
+                           '❌ Si no pasa ninguna, marque la casilla del final que dice ' +
+                           '"En mi colonia o comunidad no pasa ninguno de estos problemas".\n\n' +
+                           'No puede pasar al siguiente tema sin terminar este.',
                     destino: `.q-acc[data-bloque="${caja.getAttribute('data-bloque')}"]`
                 };
             }
 
-            // 3) Priorización por agenda.
-            for (const agenda of ['ambiental', 'territorial']) {
-                if (contarPorAgenda(agenda) > 0 && prioridadesDe(agenda).length === 0) {
-                    return {
-                        icono: 'fa-star', paso: 'Los más graves',
-                        titulo: `Escoja los 3 problemas ${agenda === 'ambiental' ? 'ambientales' : 'territoriales'} más graves`,
-                        texto: 'De todo lo que marcó, toque hasta tres. El primero que toque es el ' +
-                               'más grave de todos, y así en ese orden.',
-                        destino: `#prio-${agenda}`
-                    };
-                }
+            // 4) Priorización territorial.
+            if (contarPorAgenda('territorial') > 0 && prioridadesDe('territorial').length === 0) {
+                return {
+                    icono: 'fa-star', paso: '⭐ Los más graves',
+                    titulo: 'Escoja los 3 problemas territoriales más graves',
+                    texto: 'De todo lo que marcó en la agenda territorial, toque hasta tres.\n\n' +
+                           'El primero que toque es el más grave de todos.',
+                    destino: '#prio-territorial'
+                };
             }
 
-            // 4) Listo para enviar.
+            // 5) Listo para enviar.
             return {
-                icono: 'fa-paper-plane', paso: 'Último paso',
+                icono: 'fa-circle-check', paso: '✅ ¡Listo!',
                 titulo: 'Ya puede enviar su cuestionario',
-                texto: 'Toque el botón verde de enviar. Le va a salir un número de folio: anótelo.',
+                texto: 'Toque el botón verde de abajo que dice "Enviar Cuestionario".\n\n' +
+                       'Le va a salir un número de folio. Anótelo: con ese número puede ' +
+                       'preguntar después qué pasó con lo que usted reportó.',
                 destino: '#report-send'
             };
         }
@@ -6661,10 +7096,43 @@
             if (iIco) iIco.className = 'fas ' + g.icono;
             if (iPaso) iPaso.textContent = g.paso;
             if (iTit) iTit.textContent = g.titulo;
-            if (iTxt) iTxt.textContent = g.texto;
+            repartirTextoGuia(g.texto);
         }
 
         let guiaDestinoActual = null;
+
+        // La guía muestra solo la acción; lo demás se despliega a petición. Con el
+        // texto completo siempre visible, la pregunta quedaba fuera de la pantalla
+        // en un celular y la persona ni siquiera sabía que debía desplazarse.
+        function repartirTextoGuia(texto) {
+            const partes = String(texto || '').split('\n\n');
+            const resumen = partes.shift() || '';
+            const detalle = partes.join('\n\n');
+            const elTxt = document.getElementById('guia-texto');
+            const elDet = document.getElementById('guia-detalle');
+            const btn = document.getElementById('guia-mas');
+            if (elTxt) elTxt.textContent = resumen;
+            if (elDet) {
+                elDet.textContent = detalle;
+                elDet.classList.remove('visible');
+            }
+            if (btn) {
+                btn.style.display = detalle ? 'inline-flex' : 'none';
+                btn.innerHTML = '<i class="fas fa-chevron-down" aria-hidden="true"></i> Ver más';
+            }
+        }
+
+        function alternarDetalleGuia() {
+            const elDet = document.getElementById('guia-detalle');
+            const btn = document.getElementById('guia-mas');
+            if (!elDet) return;
+            const abierto = elDet.classList.toggle('visible');
+            if (btn) {
+                btn.innerHTML = abierto
+                    ? '<i class="fas fa-chevron-up" aria-hidden="true"></i> Ver menos'
+                    : '<i class="fas fa-chevron-down" aria-hidden="true"></i> Ver más';
+            }
+        }
 
         // Lleva a la persona al punto exacto del que habla la guía.
         function irAGuia() {
@@ -6680,6 +7148,441 @@
             try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
             el.classList.add('resaltado');
             setTimeout(() => el.classList.remove('resaltado'), 2000);
+        }
+
+
+        // =====================================================================
+        // MODO PASO A PASO
+        // ---------------------------------------------------------------------
+        // Una sola cosa por pantalla. La lista completa abrumaba: la gente no
+        // sabía dónde estaba ni cuánto faltaba, y se saltaba bloques enteros.
+        // Aquí cada paso muestra una pregunta o un tema, dice en qué punto va, y
+        // no deja avanzar hasta que esté resuelto.
+        // =====================================================================
+        let pasoAsistido = 0;
+        let pasosCache = [];
+
+        // Frase de acompañamiento antes de cada tema. Se genera del título para
+        // que no haya que mantener dos listas en paralelo.
+        function acompanamientoBloque(caja) {
+            const titulo = (caja.querySelector('.q-acc-head span') || {}).textContent || '';
+            const limpio = titulo.replace(/^\d+\.\s*/, '').trim().toLowerCase();
+            return '👉 Lea cada renglón y toque el cuadrito de lo que sí pasa donde usted vive.\n\n' +
+                   'Ahora vamos a hablar de ' + limpio + '.\n\n' +
+                   '📍 Cada problema que marque le va a pedir que diga en qué lugar ocurre.\n\n' +
+                   '✅ Si NO pasa ninguna de estas cosas, toque la casilla del final que dice ' +
+                   '"no pasa ninguno" y siga adelante.';
+        }
+
+        function construirPasos() {
+            const pasos = [];
+
+            // 1) Identificación, en el orden del formulario.
+            preguntasEnOrden().forEach(el => {
+                const clave = el.getAttribute('data-preg');
+                const a = AYUDA_PREGUNTA[clave] || ['Conteste esta pregunta', ''];
+                pasos.push({ tipo: 'pregunta', el: el, clave: clave,
+                             titulo: a[0], ayuda: a[1] });
+            });
+
+            // 2) Antes del primer tema, una pantalla que explica la mecánica
+            //    completa. Aprender a marcar y a ubicar al mismo tiempo que se
+            //    contesta el primer tema era demasiado de golpe.
+            if (document.querySelector('.q-acc')) {
+                pasos.push({ tipo: 'intro', el: null, clave: 'intro-agendas',
+                             titulo: 'Ahora vienen los problemas de su colonia',
+                             ayuda: '👉 Le explico cómo se hace. Son cuatro pasos que se ' +
+                                    'repiten en cada tema.\n\n' +
+                                    '1️⃣ Lea la lista y toque el cuadrito de cada problema que ' +
+                                    'sí pasa donde usted vive.\n\n' +
+                                    '2️⃣ Al marcarlo aparecen dos botones rojos abajo del ' +
+                                    'problema: 📌 Punto y 🏘️ Toda mi colonia.\n\n' +
+                                    '3️⃣ Toque 📌 Punto si el problema está en un lugar exacto ' +
+                                    '(un tiradero, un pozo, una esquina). Enseguida se abre el ' +
+                                    'mapa: toque ahí el lugar.\n\n' +
+                                    '4️⃣ Toque 🏘️ Toda mi colonia solo si afecta parejo a todos, ' +
+                                    'como que no pase el camión de la basura.\n\n' +
+                                    '⛔ No podrá marcar otro problema hasta ubicar el anterior. ' +
+                                    'Es a propósito: así ninguno se queda sin lugar.\n\n' +
+                                    '✅ Si en un tema no pasa nada de la lista, marque la casilla ' +
+                                    'del final que dice "no pasa ninguno" y siga adelante.\n\n' +
+                                    'Toque Siguiente cuando esté listo.' });
+            }
+
+            // 3) Cada agenda cierra con su propia priorización, en vez de dejar
+            //    las dos para el final: pedirle a alguien que ordene problemas
+            //    ambientales después de haber recorrido doce temas territoriales
+            //    lo obliga a recordar algo que vio veinte pasos atrás.
+            ['ambiental', 'territorial'].forEach(agenda => {
+                document.querySelectorAll(`.q-acc[data-agenda="${agenda}"]`).forEach(caja => {
+                    pasos.push({ tipo: 'bloque', el: caja,
+                                 clave: caja.getAttribute('data-bloque'),
+                                 agenda: agenda,
+                                 titulo: (caja.querySelector('.q-acc-head span') || {}).textContent || '',
+                                 ayuda: acompanamientoBloque(caja) });
+                });
+
+                const cont = document.getElementById('prio-' + agenda);
+                if (!cont) return;
+                const etiqueta = agenda === 'ambiental' ? 'ambientales' : 'territoriales';
+                pasos.push({ tipo: 'prioridad', el: cont.closest('.q-prio-caja') || cont,
+                             clave: 'prio-' + agenda, agenda: agenda,
+                             titulo: `Escoja los 3 problemas ${etiqueta} más graves`,
+                             ayuda: '👉 Toque los 3 problemas que más daño hacen donde usted vive.\n\n' +
+                                    'Abajo aparecen los que usted marcó.\n\n' +
+                                    '1️⃣ El primero que toque es el MÁS grave.\n' +
+                                    '2️⃣ El segundo es el que le sigue.\n' +
+                                    '3️⃣ El tercero cierra la lista.\n\n' +
+                                    'Si no marcó problemas en esta parte, solo toque Siguiente.' });
+            });
+
+            // 4) Envío.
+            const enviar = document.getElementById('report-send');
+            if (enviar) {
+                pasos.push({ tipo: 'enviar', el: enviar, clave: 'enviar',
+                             titulo: 'Ya terminó. Ahora envíe sus respuestas',
+                             ayuda: '👉 Toque el botón verde "Enviar Cuestionario" una sola vez.\n\n' +
+                                    'Espere un momento.\n\n' +
+                                    'Le va a salir un número de folio. Anótelo.' });
+            }
+            return pasos;
+        }
+
+        // ¿El paso actual está resuelto? Reutiliza las mismas reglas que el modo
+        // de lista completa, para que ambos modos exijan exactamente lo mismo.
+        function pasoResuelto(paso) {
+            if (!paso) return true;
+            if (paso.tipo === 'intro') return true;   // solo explica; nada que contestar
+            if (paso.tipo === 'pregunta') return preguntaContestada(paso.el);
+            if (paso.tipo === 'bloque')   return bloqueResuelto(paso.el);
+            if (paso.tipo === 'prioridad') {
+                // Sin problemas marcados en esa agenda no hay nada que priorizar.
+                if (contarPorAgenda(paso.agenda) === 0) return true;
+                return prioridadesDe(paso.agenda).length > 0;
+            }
+            return true;
+        }
+
+        // Motivo por el que no se puede avanzar, en palabras de la persona.
+        function motivoNoAvanzar(paso) {
+            if (paso.tipo === 'pregunta') {
+                return 'Falta contestar esta pregunta para poder continuar.';
+            }
+            if (paso.tipo === 'bloque') {
+                const sinUbicar = faltantesDeUbicacionEnBloque(paso.el);
+                if (sinUbicar.length > 0) {
+                    return 'Marcó ' + sinUbicar.length + ' problema(s) y falta decir en qué ' +
+                           'lugar ocurre(n). Use los botones rojos y toque el mapa.';
+                }
+                return 'Marque los problemas que pasan en su colonia, o marque la casilla ' +
+                       'del final que dice "no pasa ninguno".';
+            }
+            if (paso.tipo === 'prioridad') {
+                return 'Toque al menos uno de los problemas de la lista para señalar cuál es ' +
+                       'el más grave.';
+            }
+            return '';
+        }
+
+        function renderPasoAsistido() {
+            pasosCache = construirPasos();
+            if (pasoAsistido >= pasosCache.length) pasoAsistido = pasosCache.length - 1;
+            if (pasoAsistido < 0) pasoAsistido = 0;
+            const paso = pasosCache[pasoAsistido];
+            if (!paso) return;
+
+            // Se muestra solo el elemento del paso y la sección que lo contiene.
+            document.querySelectorAll('.q-preg, .q-acc, .q-prio-caja').forEach(el => {
+                el.classList.remove('paso-activo');
+            });
+            document.querySelectorAll('.q-seccion').forEach(el => el.classList.remove('seccion-activa'));
+            // El paso explicativo no señala ningún control: la pantalla queda con
+            // la guía sola, que es justo lo que se quiere leer sin distracciones.
+            if (paso.el) {
+                paso.el.classList.add('paso-activo');
+                const seccion = paso.el.closest('.q-seccion');
+                if (seccion) seccion.classList.add('seccion-activa');
+            }
+
+            // Un tema debe estar abierto para poder contestarlo.
+            if (paso.tipo === 'bloque' && paso.el && !paso.el.classList.contains('abierto')) {
+                paso.el.classList.add('abierto');
+                const h = paso.el.querySelector('.q-acc-head');
+                if (h) h.setAttribute('aria-expanded', 'true');
+            }
+
+            document.body.classList.toggle('paso-enviar', paso.tipo === 'enviar');
+            document.body.classList.toggle('paso-intro', paso.tipo === 'intro');
+
+            const cont = document.getElementById('nav-contador');
+            if (cont) cont.textContent = `Paso ${pasoAsistido + 1} de ${pasosCache.length}`;
+            const atras = document.getElementById('nav-atras');
+            if (atras) atras.style.visibility = pasoAsistido === 0 ? 'hidden' : 'visible';
+            const sig = document.getElementById('nav-siguiente');
+            if (sig) {
+                const ultimo = pasoAsistido === pasosCache.length - 1;
+                sig.innerHTML = ultimo
+                    ? 'Enviar <i class="fas fa-paper-plane" aria-hidden="true"></i>'
+                    : 'Siguiente <i class="fas fa-arrow-right" aria-hidden="true"></i>';
+                sig.classList.toggle('nav-enviar', ultimo);
+            }
+
+            // La guía muestra el acompañamiento del paso, no el estado global.
+            const gPaso = document.getElementById('guia-paso');
+            const gTit = document.getElementById('guia-titulo');
+            const gTxt = document.getElementById('guia-texto');
+            const gIco = document.getElementById('guia-icono');
+            if (gPaso) gPaso.textContent = `Paso ${pasoAsistido + 1} de ${pasosCache.length}`;
+            if (gTit) gTit.textContent = paso.titulo;
+            if (gIco) gIco.className = 'fas ' + (
+                paso.tipo === 'pregunta' ? 'fa-hand-pointer' :
+                paso.tipo === 'bloque' ? 'fa-list-check' :
+                paso.tipo === 'prioridad' ? 'fa-star' : 'fa-paper-plane');
+
+            let texto = paso.ayuda;
+            if (paso.tipo === 'bloque') {
+                const sinUbicar = faltantesDeUbicacionEnBloque(paso.el);
+                if (sinUbicar.length > 0) {
+                    texto = 'Usted marcó:\n"' + textoDeProblema(sinUbicar[0]).slice(0, 60) + '"\n\n' +
+                            'Ahora hay que decir DÓNDE pasa eso.\n\n' +
+                            '1️⃣ Toque uno de los dos botones rojos:\n' +
+                            '   📌 Punto — si es un lugar exacto\n' +
+                            '   🏘️ Toda mi colonia — si afecta parejo a todos\n\n' +
+                            '2️⃣ Si tocó "Punto", ahora toque en el mapa el lugar.\n\n' +
+                            '⛔ No puede seguir hasta hacer esto.';
+                }
+            }
+            repartirTextoGuia(texto);
+            if (paso.tipo === 'intro') {
+                const det = document.getElementById('guia-detalle');
+                const btn = document.getElementById('guia-mas');
+                if (det && det.textContent) {
+                    det.classList.add('visible');
+                    if (btn) btn.innerHTML = '<i class="fas fa-chevron-up" aria-hidden="true"></i> Ver menos';
+                }
+            }
+
+            // "Llévame ahí" apunta al elemento del paso: en un tema con problema
+            // pendiente, a la fila de ubicación; si no, al elemento del paso.
+            if (paso.tipo === 'intro') {
+                guiaDestinoActual = null;
+            } else if (paso.tipo === 'bloque') {
+                const sinUbicar = faltantesDeUbicacionEnBloque(paso.el);
+                guiaDestinoActual = sinUbicar.length > 0
+                    ? `.q-item[data-codigo="${sinUbicar[0]}"] .q-ubi`
+                    : `.q-acc[data-bloque="${paso.clave}"]`;
+            } else if (paso.tipo === 'pregunta') {
+                guiaDestinoActual = `.q-preg[data-preg="${paso.clave}"]`;
+            } else if (paso.tipo === 'prioridad') {
+                guiaDestinoActual = '#' + paso.clave;
+            } else {
+                guiaDestinoActual = '#report-send';
+            }
+
+            const panel = document.querySelector('#tab-participacion .tab-content-scrollable');
+            if (panel) panel.scrollTop = 0;
+        }
+
+        function pasoSiguienteAsistido() {
+            const paso = pasosCache[pasoAsistido];
+            if (paso && paso.tipo === 'enviar') { enviarCuestionario(); return; }
+
+            if (!pasoResuelto(paso)) {
+                // El aviso vive en la guía, no en un toast: dos mensajes iguales
+                // a la vez tapaban la pantalla y confundían más de lo que ayudaban.
+                // Se reparte con la misma función que el resto: escribir el texto
+                // completo en el resumen dejaba el detalle anterior debajo y la
+                // explicación aparecía dos veces.
+                repartirTextoGuia('⛔ ' + motivoNoAvanzar(paso) + '\n\n' + paso.ayuda);
+                const caja = document.getElementById('guia-viva');
+                if (caja) {
+                    caja.classList.add('guia-alerta');
+                    setTimeout(() => caja.classList.remove('guia-alerta'), 2400);
+                    try { caja.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+                }
+                return;
+            }
+            if (pasoAsistido < pasosCache.length - 1) {
+                pasoAsistido++;
+                guardarProgreso();
+                renderPasoAsistido();
+            }
+        }
+
+        function pasoAtrasAsistido() {
+            if (pasoAsistido > 0) {
+                pasoAsistido--;
+                guardarProgreso();
+                renderPasoAsistido();
+            }
+        }
+
+
+        // La pista solo tiene sentido hasta que la persona abre el panel la primera
+        // vez. Después estorbaría cada vez que cierra para tocar el mapa.
+        let pistaYaUsada = false;
+
+        function actualizarPistaInicio() {
+            const pista = document.getElementById('pista-inicio');
+            if (!pista) return;
+            const debeVerse = !pistaYaUsada && sidebarState === 'closed';
+            pista.classList.toggle('visible', debeVerse);
+            if (debeVerse) apuntarPistaAlBoton();
+        }
+
+        // La flecha iba centrada en la caja y apuntaba a un punto vacío del mapa.
+        // Se mide la posición real del botón y se coloca la flecha justo debajo (o
+        // encima) de su centro: para quien no está familiarizado con la pantalla,
+        // una flecha que señala mal es peor que no tener flecha.
+        function apuntarPistaAlBoton() {
+            const pista = document.getElementById('pista-inicio');
+            const fab = document.getElementById('fab');
+            const flecha = pista ? pista.querySelector('.pista-flecha') : null;
+            if (!pista || !fab || !flecha) return;
+
+            const b = fab.getBoundingClientRect();
+            if (!b.width) return;
+            const centroBoton = b.left + b.width / 2;
+            const margen = 10;
+
+            // Arriba o abajo del botón, según de qué lado quepa.
+            const debajo = b.top < window.innerHeight / 2;
+            pista.classList.toggle('apunta-arriba', debajo);
+            pista.classList.toggle('apunta-abajo', !debajo);
+
+            // Se mide después de fijar la clase, que cambia el orden de la flecha.
+            const alto = pista.offsetHeight || 70;
+            const ancho = pista.offsetWidth || 176;
+            pista.style.top = (debajo ? b.bottom + margen : b.top - alto - margen) + 'px';
+
+            // La caja se centra bajo el botón, pero sin salirse de la pantalla.
+            let izq = centroBoton - ancho / 2;
+            izq = Math.max(8, Math.min(izq, window.innerWidth - ancho - 8));
+            pista.style.left = izq + 'px';
+            pista.style.right = 'auto';
+
+            // Y la flecha se corre hasta quedar exactamente bajo el botón.
+            const desplazamiento = centroBoton - izq - (flecha.offsetWidth || 14) / 2;
+            flecha.style.marginLeft = Math.max(6, Math.min(desplazamiento, ancho - 26)) + 'px';
+        }
+
+        // ---------- Lectura en voz alta ----------
+        // Usa la síntesis del navegador: no necesita servidor ni conexión extra.
+        // Para quien tiene la vista cansada o poca práctica de lectura es la
+        // diferencia entre poder contestar y abandonar.
+        function leerGuiaEnVoz() {
+            if (!('speechSynthesis' in window)) {
+                mostrarNotificacion('Este teléfono no puede leer en voz alta', 'warning');
+                return;
+            }
+            const btn = document.getElementById('guia-voz');
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                if (btn) btn.classList.remove('leyendo');
+                return;
+            }
+            const tit = (document.getElementById('guia-titulo') || {}).textContent || '';
+            const txt = ((document.getElementById('guia-texto') || {}).textContent || '') + ' ' +
+                        ((document.getElementById('guia-detalle') || {}).textContent || '');
+            // Se quitan los símbolos decorativos: leídos en voz alta estorban.
+            const limpio = (tit + '. ' + txt)
+                .replace(/[⛔📌🛤️🗺️🏘️✅❌⭐📋🔒👉•]/g, ' ')
+                .replace(/\s+/g, ' ').trim();
+
+            const u = new SpeechSynthesisUtterance(limpio);
+            u.lang = 'es-MX';
+            u.rate = 0.88;   // más lento que el habla normal
+            u.pitch = 1;
+            u.onend = () => { if (btn) btn.classList.remove('leyendo'); };
+            u.onerror = () => { if (btn) btn.classList.remove('leyendo'); };
+            if (btn) btn.classList.add('leyendo');
+            window.speechSynthesis.speak(u);
+        }
+
+        // ---------- Guardado automático ----------
+        // Si se corta la señal o se cierra el navegador por accidente, nada se
+        // pierde: el cuestionario se recupera donde quedó.
+        const CLAVE_PROGRESO = 'pmduoet_progreso';
+
+        function guardarProgreso() {
+            try {
+                const datos = { paso: pasoAsistido, folio: folioSesion, campos: {},
+                                ubicaciones: ubicacionesProblemas,
+                                prioridades: { ambiental: prioridades.ambiental,
+                                               territorial: prioridades.territorial },
+                                colonia: coloniaSeleccionadaOficial,
+                                guardado: Date.now() };
+                document.querySelectorAll('#cuestionario input').forEach(el => {
+                    const id = el.id || el.value || el.getAttribute('data-codigo');
+                    if (!id) return;
+                    const llave = (el.type === 'radio' || el.type === 'checkbox')
+                        ? (el.name || '') + '|' + el.value
+                        : 'v|' + (el.id || el.getAttribute('data-codigo'));
+                    datos.campos[llave] = (el.type === 'radio' || el.type === 'checkbox')
+                        ? el.checked : el.value;
+                });
+                localStorage.setItem(CLAVE_PROGRESO, JSON.stringify(datos));
+            } catch (e) { /* almacenamiento no disponible */ }
+        }
+
+        function restaurarProgreso() {
+            let datos = null;
+            try { datos = JSON.parse(localStorage.getItem(CLAVE_PROGRESO) || 'null'); } catch (e) {}
+            if (!datos || !datos.campos) return false;
+            // Un progreso de hace más de un día probablemente sea de otra persona
+            // en un equipo compartido: mejor empezar limpio.
+            if (Date.now() - (datos.guardado || 0) > 24 * 60 * 60 * 1000) {
+                borrarProgreso();
+                return false;
+            }
+
+            document.querySelectorAll('#cuestionario input').forEach(el => {
+                const llave = (el.type === 'radio' || el.type === 'checkbox')
+                    ? (el.name || '') + '|' + el.value
+                    : 'v|' + (el.id || el.getAttribute('data-codigo'));
+                if (!(llave in datos.campos)) return;
+                if (el.type === 'radio' || el.type === 'checkbox') el.checked = !!datos.campos[llave];
+                else el.value = datos.campos[llave] || '';
+            });
+
+            Object.keys(datos.ubicaciones || {}).forEach(k => {
+                ubicacionesProblemas[k] = datos.ubicaciones[k];
+            });
+            if (datos.prioridades) {
+                prioridades.ambiental = datos.prioridades.ambiental || [];
+                prioridades.territorial = datos.prioridades.territorial || [];
+            }
+            if (datos.colonia) coloniaSeleccionadaOficial = datos.colonia;
+            if (datos.folio) folioSesion = datos.folio;
+            pasoAsistido = datos.paso || 0;
+            return true;
+        }
+
+        function borrarProgreso() {
+            try { localStorage.removeItem(CLAVE_PROGRESO); } catch (e) {}
+        }
+
+        // ---------- Pantalla de confirmación ----------
+        function mostrarGracias(folio) {
+            const p = document.getElementById('pantalla-gracias');
+            const n = document.getElementById('gracias-folio-num');
+            if (n) n.textContent = folio || '—';
+            if (p) p.classList.add('visible');
+            const nav = document.getElementById('nav-asistido');
+            if (nav) nav.style.display = 'none';
+            const tabs = document.querySelector('.sidebar-tabs');
+            if (tabs) tabs.style.display = 'none';
+        }
+
+        function cerrarGracias() {
+            const p = document.getElementById('pantalla-gracias');
+            if (p) p.classList.remove('visible');
+            const tabs = document.querySelector('.sidebar-tabs');
+            if (tabs) tabs.style.display = '';
+            const nav = document.getElementById('nav-asistido');
+            if (nav) nav.style.display = 'flex';
+            pasoAsistido = 0;
+            renderPasoAsistido();
         }
 
         // ---------- Bloqueo secuencial de bloques ----------
@@ -6753,9 +7656,19 @@
             // podía saltar directo a marcar problemas y llegar al envío sin saber
             // quién los reporta ni desde qué colonia, que es lo que da valor al dato.
             const identificacionLista = todasLasPreguntasContestadas();
+            // La agenda ambiental va primero; la territorial solo se abre cuando
+            // TODOS los bloques ambientales estén resueltos. Sin esto, la gente
+            // saltaba a territorial sin terminar ambiental y el bloqueo interno
+            // de cada agenda no servía de nada.
+            const ambientalCompleta = identificacionLista &&
+                Array.from(document.querySelectorAll('.q-acc[data-agenda="ambiental"]'))
+                    .every(bloqueResuelto);
+
             ['ambiental', 'territorial'].forEach(agenda => {
                 const cajas = Array.from(document.querySelectorAll(`.q-acc[data-agenda="${agenda}"]`));
-                let anterioresListos = identificacionLista;
+                let anterioresListos = agenda === 'ambiental'
+                    ? identificacionLista
+                    : ambientalCompleta;
                 cajas.forEach((caja, i) => {
                     const resuelto = bloqueResuelto(caja);
                     const bloqueado = !anterioresListos;
@@ -7625,8 +8538,11 @@
                 }
 
                 const folioEnviado = folioSesion;
+                borrarProgreso();
                 limpiarCuestionario();
-                mostrarNotificacion(`✅ Enviado. Su folio es ${folioEnviado} — anótelo si desea consultar o cancelar sus datos`, 'success');
+                // Pantalla grande de confirmación: sin ella la gente duda si se
+                // envió y manda el mismo cuestionario dos o tres veces.
+                mostrarGracias(folioEnviado);
 
             } catch (error) {
                 console.error('Error al enviar el cuestionario:', error);
@@ -7644,6 +8560,7 @@
             document.querySelectorAll('.q-check-noaplica').forEach(c => { c.checked = false; });
             document.querySelectorAll('.q-acc').forEach(c => { delete c.dataset.autoAbierto; });
             folioSesion = generarFolio();
+            pasoAsistido = 0;   // el siguiente participante empieza desde el paso 1
             document.querySelectorAll('.q-otro-input').forEach(i => { i.value = ''; });
             prioridades.ambiental = [];
             prioridades.territorial = [];

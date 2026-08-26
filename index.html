@@ -6431,8 +6431,12 @@
             folioSesion = generarFolio();
             pasoAsistido = 0;
 
-            // Si quedó un cuestionario a medias se recupera; si no, arranca limpio.
-            const habiaProgreso = restaurarProgreso();
+            // Cada apertura arranca de cero. Recuperar el avance devolvía las
+            // respuestas pero no el estado del mapa —la referencia de la colonia,
+            // el encuadre, los trazos—, así que el cuestionario quedaba a medio
+            // camino y había que rehacer partes sin saber cuáles. Se borra
+            // cualquier resto de sesiones anteriores.
+            borrarProgreso();
 
             // El recorrido paso a paso es la única forma de contestar: la lista
             // completa se retiró porque abrumaba y permitía saltarse apartados.
@@ -6449,9 +6453,6 @@
             actualizarPistaInicio();
             // Al girar el teléfono el botón cambia de sitio y la flecha debe seguirlo.
             window.addEventListener('resize', actualizarPistaInicio);
-            if (habiaProgreso) {
-                mostrarNotificacion('Se recuperó su cuestionario donde lo dejó', 'info');
-            }
         }
 
         function alCambiarCuestionario() {
@@ -6465,7 +6466,6 @@
             reconstruirPriorizacion('ambiental');
             reconstruirPriorizacion('territorial');
             renderPasoAsistido();
-            guardarProgreso();
         }
 
         // ---------- Avance y badges por bloque ----------
@@ -7598,7 +7598,6 @@
             }
             if (pasoAsistido < pasosCache.length - 1) {
                 pasoAsistido++;
-                guardarProgreso();
                 renderPasoAsistido();
             }
         }
@@ -7606,7 +7605,6 @@
         function pasoAtrasAsistido() {
             if (pasoAsistido > 0) {
                 pasoAsistido--;
-                guardarProgreso();
                 renderPasoAsistido();
             }
         }
@@ -7715,64 +7713,12 @@
             window.speechSynthesis.speak(u);
         }
 
-        // ---------- Guardado automático ----------
-        // Si se corta la señal o se cierra el navegador por accidente, nada se
-        // pierde: el cuestionario se recupera donde quedó.
+        // ---------- Limpieza entre participantes ----------
+        // No se guarda avance: cada persona empieza de cero. Esta clave existe solo
+        // para borrar lo que hubieran dejado versiones anteriores del portal.
         const CLAVE_PROGRESO = 'pmduoet_progreso';
 
-        function guardarProgreso() {
-            try {
-                const datos = { paso: pasoAsistido, folio: folioSesion, campos: {},
-                                ubicaciones: ubicacionesProblemas,
-                                prioridades: { ambiental: prioridades.ambiental,
-                                               territorial: prioridades.territorial },
-                                colonia: coloniaSeleccionadaOficial,
-                                guardado: Date.now() };
-                document.querySelectorAll('#cuestionario input').forEach(el => {
-                    const id = el.id || el.value || el.getAttribute('data-codigo');
-                    if (!id) return;
-                    const llave = (el.type === 'radio' || el.type === 'checkbox')
-                        ? (el.name || '') + '|' + el.value
-                        : 'v|' + (el.id || el.getAttribute('data-codigo'));
-                    datos.campos[llave] = (el.type === 'radio' || el.type === 'checkbox')
-                        ? el.checked : el.value;
-                });
-                localStorage.setItem(CLAVE_PROGRESO, JSON.stringify(datos));
-            } catch (e) { /* almacenamiento no disponible */ }
-        }
 
-        function restaurarProgreso() {
-            let datos = null;
-            try { datos = JSON.parse(localStorage.getItem(CLAVE_PROGRESO) || 'null'); } catch (e) {}
-            if (!datos || !datos.campos) return false;
-            // Un progreso de hace más de un día probablemente sea de otra persona
-            // en un equipo compartido: mejor empezar limpio.
-            if (Date.now() - (datos.guardado || 0) > 24 * 60 * 60 * 1000) {
-                borrarProgreso();
-                return false;
-            }
-
-            document.querySelectorAll('#cuestionario input').forEach(el => {
-                const llave = (el.type === 'radio' || el.type === 'checkbox')
-                    ? (el.name || '') + '|' + el.value
-                    : 'v|' + (el.id || el.getAttribute('data-codigo'));
-                if (!(llave in datos.campos)) return;
-                if (el.type === 'radio' || el.type === 'checkbox') el.checked = !!datos.campos[llave];
-                else el.value = datos.campos[llave] || '';
-            });
-
-            Object.keys(datos.ubicaciones || {}).forEach(k => {
-                ubicacionesProblemas[k] = datos.ubicaciones[k];
-            });
-            if (datos.prioridades) {
-                prioridades.ambiental = datos.prioridades.ambiental || [];
-                prioridades.territorial = datos.prioridades.territorial || [];
-            }
-            if (datos.colonia) coloniaSeleccionadaOficial = datos.colonia;
-            if (datos.folio) folioSesion = datos.folio;
-            pasoAsistido = datos.paso || 0;
-            return true;
-        }
 
         function borrarProgreso() {
             try { localStorage.removeItem(CLAVE_PROGRESO); } catch (e) {}
@@ -8170,6 +8116,7 @@
             // Se descarta cualquier trazo a medias antes de empezar otro.
             abortarTrazoEnCurso();
             problemaEnUbicacion = codigo;
+            redibujarProblemasEnMapa();   // deja los marcadores fuera del paso
             document.querySelectorAll('.q-ubi').forEach(f => f.classList.remove('esperando'));
             const fila = document.querySelector(`.q-ubi[data-ubi="${codigo}"]`);
             if (fila) fila.classList.add('esperando');
@@ -8191,6 +8138,7 @@
         function desactivarDibujoProblema() {
             abortarTrazoEnCurso();
             problemaEnUbicacion = null;
+            redibujarProblemasEnMapa();   // devuelve la explicación a los marcadores
             document.querySelectorAll('.q-ubi').forEach(f => f.classList.remove('esperando'));
             if (drawControl) { map.removeControl(drawControl); drawControl = null; }
             const btn = document.getElementById('btn-cancelar-trazo');
@@ -8403,11 +8351,21 @@
                 const etiqueta = `<strong>${escapeHTML(cod)}</strong><br>${escapeHTML(texto)}`;
 
                 if (u.geojson.type !== 'Point') {
+                    // interactive:false deja pasar el toque hacia el mapa. Un
+                    // polígono relleno se lo quedaba, y por eso no se podía marcar
+                    // un punto dentro de una zona ya dibujada. Se conserva el
+                    // relleno —ver el área ayuda a orientarse— pero deja de
+                    // estorbar; la explicación queda en el marcador numerado.
                     L.geoJSON(u.geojson, {
-                        style: { color: color, weight: 4, fillOpacity: 0.25 }
-                    }).bindPopup(etiqueta).addTo(capa);
+                        interactive: false,
+                        style: { color: color, weight: 4, fillOpacity: 0.18 }
+                    }).addTo(capa);
                 }
+                // Mientras se ubica otro problema, ni los marcadores deben
+                // interceptar el toque: un dedo poco firme daría en el marcador y
+                // no en el sitio que quería señalar.
                 L.marker([u.lat, u.lng], {
+                    interactive: !problemaEnUbicacion,
                     icon: L.divIcon({
                         className: 'marcador-problema',
                         html: `<span style="background:${color}">${escapeHTML(cod.split('-')[1] || '')}</span>`,

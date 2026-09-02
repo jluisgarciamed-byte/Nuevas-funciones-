@@ -5935,6 +5935,13 @@
         // ---------- Estructura del cuestionario ----------
         const OPC_SEXO = ['Mujer', 'Hombre', 'Prefiero no decirlo'];
         const OPC_LGBT = ['Sí', 'No'];
+        const OPC_DISCAPACIDAD = ['Sí', 'No'];
+        const OPC_DISCAPACIDAD_TIPO = [
+            'Grupo 1. Para ver, oír o hablar',
+            'Grupo 2. Para caminar, mover objetos o coordinar movimientos',
+            'Grupo 3. Para aprender o para convivir con otras personas',
+            'Grupo 4. Más de una de las anteriores, u otra distinta',
+            'Prefiero no decirlo'];
         const OPC_LGBT_TIPO = ['Mujer Trans', 'Hombre Trans', 'No binario', 'Género fluido',
             'Gay', 'Lesbiana', 'Persona Bisexual', 'Pansexual', 'Persona Asexual',
             'Prefiero no decirlo', 'Otro'];
@@ -6285,6 +6292,15 @@
                 <fieldset class="q-grupo q-preg" data-preg="1.8"><legend>1.8 ¿Usted se considera persona indígena o afromexicana?</legend>
                     ${radioGrupo('q-adscripcion', OPC_ADSCRIPCION, 'q-ads')}
                 </fieldset>
+
+                <fieldset class="q-grupo q-preg" data-preg="1.9">
+                    <legend>1.9 ¿Tiene usted alguna discapacidad?</legend>
+                    ${radioGrupo('q-disc', OPC_DISCAPACIDAD, 'q-disc')}
+                    <div class="q-condicional" id="q-disc-cual">
+                        <label class="q-condicional-titulo">¿De qué tipo?</label>
+                        ${radioGrupo('q-disc-tipo', OPC_DISCAPACIDAD_TIPO, 'q-disc-tipo')}
+                    </div>
+                </fieldset>
             </fieldset>
 
             <fieldset class="q-seccion">
@@ -6576,7 +6592,9 @@
                         <h4>Datos personales sensibles</h4>
                         <p><strong>De origen:</strong> información relativa al origen étnico y racial.<br>
                         <strong>De identidad:</strong> pertenencia a algún grupo de identidad LGBTIQ+
-                        y, en su caso, cuál.</p>
+                        y, en su caso, cuál.<br>
+                        <strong>De salud:</strong> existencia de alguna discapacidad y, en su caso,
+                        de qué tipo.</p>
                         <p>Estas respuestas son voluntarias. Puede elegir "Prefiero no decirlo" y
                         se difunden únicamente de forma estadística, nunca asociadas a una persona.</p>
 
@@ -7021,6 +7039,14 @@
             const clave = el.getAttribute('data-preg');
             if (clave === '3.1') return coloniaEsValida();
 
+            // 1.9 encadena igual que 1.1.1: si hay discapacidad, falta el tipo.
+            if (clave === '1.9') {
+                const base = valorRadio('q-disc');
+                if (!base) return false;
+                if (base !== 'Sí') return true;
+                return !!valorRadio('q-disc-tipo');
+            }
+
             // 1.1.1 encadena dos respuestas: si contesta "Sí", falta decir a cuál.
             if (clave === '1.1.1') {
                 const base = valorRadio('q-lgbt');
@@ -7076,8 +7102,22 @@
             }
         }
 
+        // Mismo criterio que en la pregunta de identidad: el subgrupo solo aparece
+        // si la respuesta es afirmativa, y al cambiar a "No" se limpia para que no
+        // quede un tipo de discapacidad registrado en alguien que dijo no tener.
+        function actualizarCondicionalDiscapacidad() {
+            const caja = document.getElementById('q-disc-cual');
+            if (!caja) return;
+            const esSi = valorRadio('q-disc') === 'Sí';
+            caja.classList.toggle('visible', esSi);
+            if (!esSi) {
+                document.querySelectorAll('input[name="q-disc-tipo"]').forEach(r => { r.checked = false; });
+            }
+        }
+
         function actualizarBloqueoPreguntas() {
             actualizarCondicionalLGBT();
+            actualizarCondicionalDiscapacidad();
             let anterioresListas = true;
             preguntasEnOrden().forEach(el => {
                 const contestada = preguntaContestada(el);
@@ -7135,6 +7175,12 @@
             '1.8': ['¿Se considera persona indígena o afromexicana?',
                     '👉 Toque la opción que corresponde.\n\n' +
                     'Si prefiere no contestar, toque "Prefiero no decirlo".'],
+            '1.9': ['¿Tiene usted alguna discapacidad?',
+                    '👉 Toque Sí o No.\n\n' +
+                    'Si toca Sí, abajo aparece otra lista para que diga de qué tipo. ' +
+                    'Ahí puede elegir "Prefiero no decirlo".\n\n' +
+                    'Esta pregunta sirve para saber si las banquetas, el transporte y ' +
+                    'los servicios están dejando fuera a alguien.'],
             '2.1': ['¿Usted representa a alguien?',
                     '👉 Si viene por su cuenta, toque la primera opción: "Ciudadano o ciudadana".\n\n' +
                     'Si es representante de colonia, delegado o parte de un comité, toque su cargo.'],
@@ -8637,6 +8683,8 @@
                     distribuidor: distribuidorCodigo,
                     folio: folioSesion,
                     sexo: valorRadio('q-sexo'),
+                    discapacidad: valorRadio('q-disc'),
+                    discapacidad_tipo: valorRadio('q-disc-tipo'),
                     lgbtiq: valorRadio('q-lgbt'),
                     lgbtiq_cual: valorRadio('q-lgbt-tipo') === 'Otro'
                         ? valorTexto('q-lgbt-otro')
@@ -8700,6 +8748,8 @@
                         delete alterno.bloques_sin_problemas;
                         delete alterno.lgbtiq;
                         delete alterno.lgbtiq_cual;
+                        delete alterno.discapacidad;
+                        delete alterno.discapacidad_tipo;
                         delete alterno.folio;
                         alterno.otros = Object.assign({}, payload.otros, {
                             '_PRIORIDAD_AMBIENTAL': JSON.stringify(prioAmb),
@@ -8810,7 +8860,7 @@
             ['q-edad', 'q-anios', 'q-ocupacion-otro', 'q-trabajo-otro', 'q-lgbt-otro'].forEach(id => {
                 const el = document.getElementById(id); if (el) el.value = '';
             });
-            ['q-sexo', 'q-lgbt', 'q-lgbt-tipo', 'q-nacio', 'q-escolaridad', 'q-ocupacion', 'q-trabajo', 'q-adscripcion'].forEach(n => {
+            ['q-sexo', 'q-lgbt', 'q-lgbt-tipo', 'q-disc', 'q-disc-tipo', 'q-nacio', 'q-escolaridad', 'q-ocupacion', 'q-trabajo', 'q-adscripcion'].forEach(n => {
                 document.querySelectorAll(`input[name="${n}"]`).forEach(r => { r.checked = false; });
             });
 

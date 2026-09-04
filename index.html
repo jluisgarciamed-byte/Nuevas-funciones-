@@ -241,6 +241,15 @@
             font-size: 0.85rem; color: var(--light);
         }
 
+        /* Pregunta que encabeza cada lista de problemas. */
+        .q-acc-pregunta {
+            margin: 0 0 0.7rem;
+            font-size: 0.92rem; font-weight: 600; color: var(--light);
+            line-height: 1.45;
+            padding-bottom: 0.55rem;
+            border-bottom: 1px solid var(--border);
+        }
+
         /* ===== ACORDEÓN DE BLOQUES TEMÁTICOS =====
            Con 18 bloques abiertos a la vez el panel medía varios miles de píxeles y
            obligaba a un scroll interminable en móvil. Cada bloque se colapsa y muestra
@@ -248,6 +257,7 @@
         .q-grupo.q-acc { padding: 0; overflow: hidden; }
         .q-acc-head {
             display: flex; align-items: center; gap: 0.55rem; width: 100%;
+            text-transform: uppercase; letter-spacing: 0.02em;
             padding: 0.75rem 0.85rem; background: transparent; border: none;
             color: var(--light); font-family: inherit; font-size: 0.88rem;
             font-weight: 600; text-align: left; cursor: pointer; line-height: 1.35;
@@ -260,6 +270,7 @@
         }
         .q-grupo.q-acc.abierto .q-acc-head .q-acc-chevron { transform: rotate(180deg); }
         .q-acc-badge {
+            text-transform: none;
             flex-shrink: 0; min-width: 1.4rem; height: 1.4rem; padding: 0 0.35rem;
             display: none; align-items: center; justify-content: center;
             background: var(--success); color: #06281f; border-radius: 999px;
@@ -949,6 +960,7 @@
         .q-aviso a { color: var(--info); text-decoration: underline; }
 
         .q-acc-pendiente {
+            text-transform: none;
             display: none; flex-shrink: 0; padding: 0.1rem 0.45rem;
             border-radius: 999px; background: rgba(239,68,68,0.2);
             border: 1px solid rgba(239,68,68,0.5); color: #fca5a5;
@@ -6198,6 +6210,8 @@
                     <i class="fas fa-chevron-down q-acc-chevron" aria-hidden="true"></i>
                 </button>
                 <div class="q-acc-body" id="${idPanel}">
+                    <p class="q-acc-pregunta">Seleccione, si alguna de las siguientes
+                    problemáticas ocurre en su colonia/comunidad</p>
                     ${items}
                     <div class="q-otro q-item" data-codigo="${codigoOtro}">
                         <label for="otro-${codigoOtro}">${escapeHTML(grupo.otro)}</label>
